@@ -1,0 +1,74 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Server\Server.csproj", "{029F638D-0021-4AE6-B8CB-E693522E118A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Protocol", "Protocol\Protocol.csproj", "{44474245-01A9-4D44-B3F3-84715AA23FE7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "protobuf-net", "Z:\protobuf\protobuf-net\protobuf-net.csproj", "{8374E4D7-2A91-48F1-9360-09B09CF27C3F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		CoreOnly|Any CPU = CoreOnly|Any CPU
+		Debug|Any CPU = Debug|Any CPU
+		Net20|Any CPU = Net20|Any CPU
+		Profile|Any CPU = Profile|Any CPU
+		Release|Any CPU = Release|Any CPU
+		Silverlight2|Any CPU = Silverlight2|Any CPU
+		Unity|Any CPU = Unity|Any CPU
+		iOS|Any CPU = iOS|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{029F638D-0021-4AE6-B8CB-E693522E118A}.CoreOnly|Any CPU.ActiveCfg = Release|Any CPU
+		{029F638D-0021-4AE6-B8CB-E693522E118A}.CoreOnly|Any CPU.Build.0 = Release|Any CPU
+		{029F638D-0021-4AE6-B8CB-E693522E118A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{029F638D-0021-4AE6-B8CB-E693522E118A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{029F638D-0021-4AE6-B8CB-E693522E118A}.Net20|Any CPU.ActiveCfg = Release|Any CPU
+		{029F638D-0021-4AE6-B8CB-E693522E118A}.Net20|Any CPU.Build.0 = Release|Any CPU
+		{029F638D-0021-4AE6-B8CB-E693522E118A}.Profile|Any CPU.ActiveCfg = Release|Any CPU
+		{029F638D-0021-4AE6-B8CB-E693522E118A}.Profile|Any CPU.Build.0 = Release|Any CPU
+		{029F638D-0021-4AE6-B8CB-E693522E118A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{029F638D-0021-4AE6-B8CB-E693522E118A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{029F638D-0021-4AE6-B8CB-E693522E118A}.Silverlight2|Any CPU.ActiveCfg = Release|Any CPU
+		{029F638D-0021-4AE6-B8CB-E693522E118A}.Silverlight2|Any CPU.Build.0 = Release|Any CPU
+		{029F638D-0021-4AE6-B8CB-E693522E118A}.Unity|Any CPU.ActiveCfg = Release|Any CPU
+		{029F638D-0021-4AE6-B8CB-E693522E118A}.Unity|Any CPU.Build.0 = Release|Any CPU
+		{029F638D-0021-4AE6-B8CB-E693522E118A}.iOS|Any CPU.ActiveCfg = Release|Any CPU
+		{029F638D-0021-4AE6-B8CB-E693522E118A}.iOS|Any CPU.Build.0 = Release|Any CPU
+		{44474245-01A9-4D44-B3F3-84715AA23FE7}.CoreOnly|Any CPU.ActiveCfg = Release|Any CPU
+		{44474245-01A9-4D44-B3F3-84715AA23FE7}.CoreOnly|Any CPU.Build.0 = Release|Any CPU
+		{44474245-01A9-4D44-B3F3-84715AA23FE7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44474245-01A9-4D44-B3F3-84715AA23FE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44474245-01A9-4D44-B3F3-84715AA23FE7}.Net20|Any CPU.ActiveCfg = Release|Any CPU
+		{44474245-01A9-4D44-B3F3-84715AA23FE7}.Net20|Any CPU.Build.0 = Release|Any CPU
+		{44474245-01A9-4D44-B3F3-84715AA23FE7}.Profile|Any CPU.ActiveCfg = Release|Any CPU
+		{44474245-01A9-4D44-B3F3-84715AA23FE7}.Profile|Any CPU.Build.0 = Release|Any CPU
+		{44474245-01A9-4D44-B3F3-84715AA23FE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44474245-01A9-4D44-B3F3-84715AA23FE7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44474245-01A9-4D44-B3F3-84715AA23FE7}.Silverlight2|Any CPU.ActiveCfg = Release|Any CPU
+		{44474245-01A9-4D44-B3F3-84715AA23FE7}.Silverlight2|Any CPU.Build.0 = Release|Any CPU
+		{44474245-01A9-4D44-B3F3-84715AA23FE7}.Unity|Any CPU.ActiveCfg = Release|Any CPU
+		{44474245-01A9-4D44-B3F3-84715AA23FE7}.Unity|Any CPU.Build.0 = Release|Any CPU
+		{44474245-01A9-4D44-B3F3-84715AA23FE7}.iOS|Any CPU.ActiveCfg = Release|Any CPU
+		{44474245-01A9-4D44-B3F3-84715AA23FE7}.iOS|Any CPU.Build.0 = Release|Any CPU
+		{8374E4D7-2A91-48F1-9360-09B09CF27C3F}.CoreOnly|Any CPU.ActiveCfg = CoreOnly|Any CPU
+		{8374E4D7-2A91-48F1-9360-09B09CF27C3F}.CoreOnly|Any CPU.Build.0 = CoreOnly|Any CPU
+		{8374E4D7-2A91-48F1-9360-09B09CF27C3F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8374E4D7-2A91-48F1-9360-09B09CF27C3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8374E4D7-2A91-48F1-9360-09B09CF27C3F}.Net20|Any CPU.ActiveCfg = Net20|Any CPU
+		{8374E4D7-2A91-48F1-9360-09B09CF27C3F}.Net20|Any CPU.Build.0 = Net20|Any CPU
+		{8374E4D7-2A91-48F1-9360-09B09CF27C3F}.Profile|Any CPU.ActiveCfg = Profile|Any CPU
+		{8374E4D7-2A91-48F1-9360-09B09CF27C3F}.Profile|Any CPU.Build.0 = Profile|Any CPU
+		{8374E4D7-2A91-48F1-9360-09B09CF27C3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8374E4D7-2A91-48F1-9360-09B09CF27C3F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8374E4D7-2A91-48F1-9360-09B09CF27C3F}.Silverlight2|Any CPU.ActiveCfg = Silverlight2|Any CPU
+		{8374E4D7-2A91-48F1-9360-09B09CF27C3F}.Silverlight2|Any CPU.Build.0 = Silverlight2|Any CPU
+		{8374E4D7-2A91-48F1-9360-09B09CF27C3F}.Unity|Any CPU.ActiveCfg = Unity|Any CPU
+		{8374E4D7-2A91-48F1-9360-09B09CF27C3F}.Unity|Any CPU.Build.0 = Unity|Any CPU
+		{8374E4D7-2A91-48F1-9360-09B09CF27C3F}.iOS|Any CPU.ActiveCfg = iOS|Any CPU
+		{8374E4D7-2A91-48F1-9360-09B09CF27C3F}.iOS|Any CPU.Build.0 = iOS|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
