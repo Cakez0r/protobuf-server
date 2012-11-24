@@ -5,6 +5,7 @@ using System.ServiceModel.Channels;
 using System.Threading;
 using System.Threading.Tasks;
 using NLog;
+using System.Linq;
 
 namespace Server
 {
@@ -14,7 +15,8 @@ namespace Server
 
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
-        public List<PlayerContext> m_players = new List<PlayerContext>();
+        private List<PlayerContext> m_players = new List<PlayerContext>();
+        private ReaderWriterLockSlim m_playersLock = new ReaderWriterLockSlim();
 
         private Thread m_worldUpdateThread;
 
@@ -26,12 +28,16 @@ namespace Server
         {
             m_worldUpdateThread = new Thread(WorldUpdate);
             m_worldUpdateThread.Start();
+
+            new Thread(StatsThread).Start();
         }
 
         public void AcceptPlayer(PlayerContext p)
         {
             //NOTE: Code here will block the AcceptSocket loop, so make sure it stays lean
+            m_playersLock.EnterWriteLock();
             m_players.Add(p);
+            m_playersLock.ExitWriteLock();
         }
 
         private void WorldUpdate()
@@ -40,6 +46,7 @@ namespace Server
             {
                 Stopwatch updateTimer = Stopwatch.StartNew();
 
+                m_playersLock.EnterReadLock();
                 Parallel.ForEach(m_players, p =>
                     {
                         p.Update(TimeSpan.Zero);
@@ -49,11 +56,14 @@ namespace Server
                             p.Dispose();
                         }
                     });
+                m_playersLock.ExitReadLock();
 
+                m_playersLock.EnterWriteLock();
                 m_players.RemoveAll(p => !p.IsConnected);
+                m_playersLock.ExitWriteLock();
 
                 updateTimer.Stop();
-               
+
                 int restTime = TARGET_UPDATE_TIME_MS - (int)updateTimer.ElapsedMilliseconds;
 
                 if (restTime < 0)
@@ -63,6 +73,27 @@ namespace Server
                 }
 
                 Thread.Sleep(restTime);
+            }
+        }
+
+        private void StatsThread()
+        {
+            long lastMessagesSent = 0;
+            long lastMessagesReceived = 0;
+
+            while (true)
+            {
+                m_playersLock.EnterReadLock();
+                long sent = m_players.Select(p => p.Stats.MessagedSent).Sum();
+                long received = m_players.Select(p => p.Stats.MessagedReceived).Sum();
+
+                Console.Title = "Players: " + m_players.Count() + " - In/Sec: " + (received - lastMessagesReceived) + " - Out/Sec " + (sent - lastMessagesSent);
+                m_playersLock.ExitReadLock();
+
+                lastMessagesSent = sent;
+                lastMessagesReceived = received;
+
+                Thread.Sleep(1000);
             }
         }
     }

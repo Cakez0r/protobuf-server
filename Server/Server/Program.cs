@@ -19,8 +19,6 @@ namespace Server
             listener.Start();
             s_log.Info("Started!");
 
-            new Thread(StatsThread).Start();
-
             while (true)
             {
                 Socket socket = listener.AcceptSocket();
@@ -29,31 +27,5 @@ namespace Server
                 s_world.AcceptPlayer(playerContext);
             }
         }
-
-        static void StatsThread()
-        {
-            long lastMessagesSent = 0;
-            long lastMessagesReceived = 0;
-
-            while (true)
-            {
-                try
-                {
-                    Thread.Sleep(1000);
-                    long sent = s_world.m_players.Select(p => p.Stats.MessagedSent).Sum();
-                    long received = s_world.m_players.Select(p => p.Stats.MessagedReceived).Sum();
-
-                    Console.Title = "Players: " + s_world.m_players.Count() + " - In/Sec: " + (received - lastMessagesReceived) + " - Out/Sec " + (sent - lastMessagesSent);
-
-                    lastMessagesSent = sent;
-                    lastMessagesReceived = received;
-                }
-                catch (Exception ex)
-                {
-
-                }
-            }
-        }
-
     }
 }

@@ -12,12 +12,6 @@ namespace Protocol
         private static Dictionary<Type, int> m_packetInfo = new Dictionary<Type, int>();
         private static Dictionary<int, Type> m_packetTypes = new Dictionary<int,Type>();
 
-        public static bool Ready
-        {
-            get;
-            private set;
-        }
-
         static ProtocolUtility()
         {
             Type[] types = Assembly.GetAssembly(typeof(ProtocolUtility)).GetTypes();
@@ -28,8 +22,6 @@ namespace Protocol
                 m_packetInfo.Add(t, packetTypeCode);
                 m_packetTypes.Add(packetTypeCode, t);
             }
-
-            Ready = true;
         }
 
         private static int CalculatePacketTypeCode(Type t)
@@ -39,10 +31,6 @@ namespace Protocol
 
         public static Type GetPacketType(int typeCode)
         {
-            if (!Ready)
-            {
-                throw new Exception("Not ready!");
-            }
             Type t = null;
             m_packetTypes.TryGetValue(typeCode, out t);
             return t;

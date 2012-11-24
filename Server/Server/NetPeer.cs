@@ -32,7 +32,6 @@ namespace Server
         private Socket m_socket;
 
         private long m_continueReadFrom = 0;
-        //private long m_continueWriteFrom = 0;
         private long m_lastReceiveBufferCapacity = 0;
 
         public NetPeerStats Stats
@@ -82,21 +81,24 @@ namespace Server
             {
                 try
                 {
-                    byte[] buffer = s_buffers.TakeBuffer(BUFFER_SIZE);
-                    long size = 0;
-                    using (MemoryStream memoryStream = new MemoryStream(buffer))
+                    if (m_socket.Connected)
                     {
-                        Serializer.NonGeneric.SerializeWithLengthPrefix(memoryStream, o, PrefixStyle.Base128, packetCode.Value);
-                        size = memoryStream.Position;
-                    }
+                        byte[] buffer = s_buffers.TakeBuffer(BUFFER_SIZE);
+                        long size = 0;
+                        using (MemoryStream memoryStream = new MemoryStream(buffer))
+                        {
+                            Serializer.NonGeneric.SerializeWithLengthPrefix(memoryStream, o, PrefixStyle.Base128, packetCode.Value);
+                            size = memoryStream.Position;
+                        }
 
-                    SocketAsyncEventArgs eventArgs = new SocketAsyncEventArgs();
-                    eventArgs.SetBuffer(buffer, 0, (int)size);
-                    eventArgs.Completed += SendCompleted;
+                        SocketAsyncEventArgs eventArgs = new SocketAsyncEventArgs();
+                        eventArgs.SetBuffer(buffer, 0, (int)size);
+                        eventArgs.Completed += SendCompleted;
 
-                    if (!m_socket.SendAsync(eventArgs))
-                    {
-                        SendCompleted(null, eventArgs);
+                        if (!m_socket.SendAsync(eventArgs))
+                        {
+                            SendCompleted(null, eventArgs);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -145,46 +147,96 @@ namespace Server
             }
         }
 
-        private async void ReceiveCompleted(object o, SocketAsyncEventArgs eventArgs)
+        private void ReceiveCompleted(object o, SocketAsyncEventArgs eventArgs)
         {
             try
             {
                 if (eventArgs.SocketError == SocketError.Success)
                 {
+                    //Write the data we received to the buffer
                     m_receiveBuffer.Write(eventArgs.Buffer, 0, eventArgs.BytesTransferred);
+
+                    //Rewind to where we should continue reading from, to attempt deserialization
                     m_receiveBuffer.Seek(m_continueReadFrom, SeekOrigin.Begin);
 
                     object obj = null;
-                    try
+                    int len = 0;
+
+                    //Until we reach the end of the buffer...
+                    while (m_receiveBuffer.Position < m_receiveBuffer.Length)
                     {
-                        while (Serializer.NonGeneric.TryDeserializeWithLengthPrefix(m_receiveBuffer, PrefixStyle.Base128, ProtocolUtility.GetPacketType, out obj))
+                        //Find out how much data we need before we can deserialize
+                        bool gotLength = false;
+
+                        try
                         {
-                            Interlocked.Increment(ref Stats.MessagedReceived);
-                            object packet = obj;
-                            m_fiber.Enqueue(() => DispatchPacket(packet));
-                            m_continueReadFrom = m_receiveBuffer.Position;
+                            gotLength = Serializer.TryReadLengthPrefix(m_receiveBuffer, PrefixStyle.Base128, true, out len);
                         }
-                    }
-                    catch (EndOfStreamException)
-                    {
-                        //We don't have a complete packet yet
+                        catch (EndOfStreamException)
+                        {
+                            //Not enough data to determine the packet length.
+                            //Skip to the end of the buffer and wait for more
+                            s_log.Trace("Reached end of stream while reading length prefix. Waiting for more data");
+                        }
+
+                        if (gotLength)
+                        {
+                            //If we have enough data to deserialize...
+                            if (m_receiveBuffer.Length - m_receiveBuffer.Position >= len)
+                            {
+                                //Rewind back to the start of the packet
+                                m_receiveBuffer.Seek(m_continueReadFrom, SeekOrigin.Begin);
+                                if (Serializer.NonGeneric.TryDeserializeWithLengthPrefix(m_receiveBuffer, PrefixStyle.Base128, ProtocolUtility.GetPacketType, out obj))
+                                {
+                                    //Deserialize one packet
+                                    object packet = obj;
+                                    m_fiber.Enqueue(() => DispatchPacket(packet));
+                                    Interlocked.Increment(ref Stats.MessagedReceived);
+
+                                    //Update pointer to the beginning of the next packet
+                                    m_continueReadFrom = m_receiveBuffer.Position;
+                                }
+                                else
+                                {
+                                    s_log.Warn("Error deserializing! Disconnecting...");
+                                    s_buffers.ReturnBuffer(eventArgs.Buffer);
+                                    eventArgs.Dispose();
+                                    Disconnect();
+                                }
+                            }
+                            else
+                            {
+                                //Not enough data for a whole packet.
+                                //Skip to the end of the buffer and wait for more
+                                s_log.Trace("Partial packet. Waiting for more data.");
+                                m_receiveBuffer.Seek(0, SeekOrigin.End);
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            //Not enough data to determine the packet length.
+                            //Skip to the end of the buffer and wait for more
+                            s_log.Trace("Partial length prefix. Waiting for more data");
+                            m_receiveBuffer.Seek(0, SeekOrigin.End);
+                            break;
+                        }
                     }
 
                     if (m_receiveBuffer.Position == m_continueReadFrom)
                     {
+                        //If the buffer position and the start of the next packet are aligned,
+                        //reset the buffer and start writing from the beginning again.
                         m_receiveBuffer.SetLength(0);
                         m_continueReadFrom = 0;
-                    }
-                    else
-                    {
-                        s_log.Trace("Fragmented packet");
                     }
 
                     if (m_lastReceiveBufferCapacity != m_receiveBuffer.Capacity)
                     {
-                        s_log.Trace("Buffer grew to " + m_receiveBuffer.Capacity + " received bytes was " + eventArgs.BytesTransferred);
+                        //s_log.Trace("Buffer grew to " + m_receiveBuffer.Capacity + " received bytes was " + eventArgs.BytesTransferred);
                         m_lastReceiveBufferCapacity = m_receiveBuffer.Capacity;
                     }
+
                     Interlocked.Add(ref Stats.BytesReceived, eventArgs.BytesTransferred);
 
                     Receive(eventArgs);
@@ -204,6 +256,9 @@ namespace Server
             catch (Exception ex)
             {
                 s_log.Warn("Exception on deserialize: " + ex);
+                s_buffers.ReturnBuffer(eventArgs.Buffer);
+                eventArgs.Dispose();
+                Disconnect();
             }
         }
 
