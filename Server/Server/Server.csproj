@@ -61,6 +61,8 @@
     <Compile Include="Utility\MathHelper.cs" />
     <Compile Include="Utility\Vector2.cs" />
     <Compile Include="World.cs" />
+    <Compile Include="Zones\Zone.cs" />
+    <Compile Include="Zones\ZoneManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

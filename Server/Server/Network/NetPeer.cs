@@ -14,8 +14,8 @@ namespace Server
     {
         public long BytesSent;
         public long BytesReceived;
-        public long MessagedSent;
-        public long MessagedReceived;
+        public long MessagesSent;
+        public long MessagesReceived;
     }
 
     public abstract class NetPeer : IDisposable
@@ -119,7 +119,7 @@ namespace Server
             s_buffers.ReturnBuffer(eventArgs.Buffer);
             eventArgs.Dispose();
 
-            Interlocked.Increment(ref Stats.MessagedSent);
+            Interlocked.Increment(ref Stats.MessagesSent);
         }
 
         private void StartReceiving()
@@ -190,7 +190,7 @@ namespace Server
                                     //Deserialize one packet
                                     object packet = obj;
                                     m_fiber.Enqueue(() => DispatchPacket(packet));
-                                    Interlocked.Increment(ref Stats.MessagedReceived);
+                                    Interlocked.Increment(ref Stats.MessagesReceived);
 
                                     //Update pointer to the beginning of the next packet
                                     m_continueReadFrom = m_receiveBuffer.Position;
@@ -242,7 +242,8 @@ namespace Server
                 }
                 else
                 {
-                    if (eventArgs.SocketError != SocketError.ConnectionReset)
+                    if (eventArgs.SocketError != SocketError.ConnectionReset && 
+                        eventArgs.SocketError != SocketError.ConnectionAborted)
                     {
                         s_log.Warn("Socket error on receive: " + eventArgs.SocketError);
                     }
