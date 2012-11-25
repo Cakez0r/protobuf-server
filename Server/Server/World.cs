@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.ServiceModel.Channels;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using NLog;
-using System.Linq;
+using Server.Utility;
 
 namespace Server
 {
@@ -38,6 +38,7 @@ namespace Server
             m_playersLock.EnterWriteLock();
             m_players.Add(p);
             m_playersLock.ExitWriteLock();
+            s_log.Info("Player {0} connected", p.PlayerState.ID);
         }
 
         private void WorldUpdate()
@@ -47,14 +48,25 @@ namespace Server
                 Stopwatch updateTimer = Stopwatch.StartNew();
 
                 m_playersLock.EnterReadLock();
-                Parallel.ForEach(m_players, p =>
+                Parallel.ForEach(m_players, p1 =>
                     {
-                        p.Update(TimeSpan.Zero);
-                        if (!p.IsConnected)
+                        p1.Update(TimeSpan.Zero);
+                        if (!p1.IsConnected)
                         {
-                            s_log.Info("Player is disconnected and will be removed.");
-                            p.Dispose();
+                            s_log.Info("Player {0} is disconnected and will be removed", p1.PlayerState.ID);
+                            p1.Dispose();
                         }
+
+                        Parallel.ForEach(m_players, p2 =>
+                            {
+                                if (p1 != p2)
+                                {
+                                    if (Vector2.Distance(new Vector2(p1.PlayerState.X, p1.PlayerState.Y), new Vector2(p2.PlayerState.X, p2.PlayerState.Y)) < 25)
+                                    {
+                                        p1.IncludeInWorldState(p2);
+                                    }
+                                }
+                            });
                     });
                 m_playersLock.ExitReadLock();
 
@@ -68,7 +80,7 @@ namespace Server
 
                 if (restTime < 0)
                 {
-                    s_log.Warn("World update ran into overtime by {0}ms.", Math.Abs(restTime));
+                    s_log.Warn("World update ran into overtime by {0}ms", Math.Abs(restTime));
                     restTime = 0;
                 }
 
@@ -84,8 +96,8 @@ namespace Server
             while (true)
             {
                 m_playersLock.EnterReadLock();
-                long sent = m_players.Select(p => p.Stats.MessagedSent).Sum();
-                long received = m_players.Select(p => p.Stats.MessagedReceived).Sum();
+                long sent = m_players.Select(p => p.Stats.BytesSent).Sum();
+                long received = m_players.Select(p => p.Stats.BytesReceived).Sum();
 
                 Console.Title = "Players: " + m_players.Count() + " - In/Sec: " + (received - lastMessagesReceived) + " - Out/Sec " + (sent - lastMessagesSent);
                 m_playersLock.ExitReadLock();

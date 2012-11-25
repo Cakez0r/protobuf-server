@@ -1,9 +1,6 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
-using System.Threading;
 using NLog;
-using System.Linq;
 
 namespace Server
 {
@@ -22,7 +19,6 @@ namespace Server
             while (true)
             {
                 Socket socket = listener.AcceptSocket();
-                s_log.Info("Player connected.");
                 PlayerContext playerContext = new PlayerContext(socket);
                 s_world.AcceptPlayer(playerContext);
             }

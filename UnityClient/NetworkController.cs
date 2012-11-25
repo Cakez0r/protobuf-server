@@ -60,7 +60,6 @@ public class NetworkController : MonoBehaviour
         try
         {
             m_tcpClient.EndConnect(result);
-            m_tcpClient.NoDelay = true;
             m_networkStream = m_tcpClient.GetStream();
             State = m_tcpClient.Connected ? NetworkState.Connected : NetworkState.Disconnected;
             m_receiveThread = new Thread(ReceiveThread);
@@ -153,7 +152,7 @@ public class NetworkController : MonoBehaviour
     {
         while (m_runReceiveThread)
         {
-            if (m_tcpClient.Connected)
+            if (m_tcpClient.Connected && m_networkStream.DataAvailable)
             {
                 try
                 {
@@ -173,6 +172,7 @@ public class NetworkController : MonoBehaviour
                     m_scheduler.Schedule(() => Debug.LogWarning("Exception on receive: " + ex));
                 }
             }
+
             Thread.Sleep(1);
         }
     }
