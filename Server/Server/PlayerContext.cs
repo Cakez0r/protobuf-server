@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using NLog;
 using Protocol;
 using Server.Utility;
+using Server.Zones;
 
 namespace Server
 {

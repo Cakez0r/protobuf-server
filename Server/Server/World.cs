@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using NLog;
 using Server.Utility;
+using Server.Zones;
 
 namespace Server
 {
@@ -19,6 +20,11 @@ namespace Server
         private ReaderWriterLockSlim m_playersLock = new ReaderWriterLockSlim();
 
         private Thread m_worldUpdateThread;
+        private DateTime m_lastUpdateTime;
+
+        private ZoneManager m_zoneManager = new ZoneManager();
+
+        private Random m_rng = new Random((int)DateTime.Now.Ticks);
 
         static World()
         {
@@ -38,35 +44,33 @@ namespace Server
             m_playersLock.EnterWriteLock();
             m_players.Add(p);
             m_playersLock.ExitWriteLock();
+
+            m_zoneManager.EnterZone(p, m_rng.Next(0));
+
             s_log.Info("Player {0} connected", p.PlayerState.ID);
         }
 
         private void WorldUpdate()
         {
+            m_lastUpdateTime = DateTime.Now;
+
             while (true)
             {
+                TimeSpan dt = DateTime.Now - m_lastUpdateTime;
+
                 Stopwatch updateTimer = Stopwatch.StartNew();
 
+                m_zoneManager.Update(dt);
                 m_playersLock.EnterReadLock();
-                Parallel.ForEach(m_players, p1 =>
-                    {
-                        p1.Update(TimeSpan.Zero);
-                        if (!p1.IsConnected)
-                        {
-                            s_log.Info("Player {0} is disconnected and will be removed", p1.PlayerState.ID);
-                            p1.Dispose();
-                        }
 
-                        Parallel.ForEach(m_players, p2 =>
-                            {
-                                if (p1 != p2)
-                                {
-                                    if (Vector2.Distance(new Vector2(p1.PlayerState.X, p1.PlayerState.Y), new Vector2(p2.PlayerState.X, p2.PlayerState.Y)) < 25)
-                                    {
-                                        p1.IncludeInWorldState(p2);
-                                    }
-                                }
-                            });
+                Parallel.ForEach(m_players, p =>
+                    {
+                        p.Update(dt);
+                        if (!p.IsConnected)
+                        {
+                            s_log.Info("Player {0} is disconnected and will be removed", p.PlayerState.ID);
+                            p.Dispose();
+                        }
                     });
                 m_playersLock.ExitReadLock();
 
@@ -84,6 +88,8 @@ namespace Server
                     restTime = 0;
                 }
 
+                m_lastUpdateTime = DateTime.Now;
+
                 Thread.Sleep(restTime);
             }
         }
@@ -96,8 +102,8 @@ namespace Server
             while (true)
             {
                 m_playersLock.EnterReadLock();
-                long sent = m_players.Select(p => p.Stats.BytesSent).Sum();
-                long received = m_players.Select(p => p.Stats.BytesReceived).Sum();
+                long sent = m_players.Select(p => p.Stats.MessagesSent).Sum();
+                long received = m_players.Select(p => p.Stats.MessagesReceived).Sum();
 
                 Console.Title = "Players: " + m_players.Count() + " - In/Sec: " + (received - lastMessagesReceived) + " - Out/Sec " + (sent - lastMessagesSent);
                 m_playersLock.ExitReadLock();
