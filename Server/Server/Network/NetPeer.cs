@@ -33,6 +33,12 @@ namespace Server
         private long m_continueReadFrom = 0;
         private long m_lastReceiveBufferCapacity = 0;
 
+        public bool Disposed
+        {
+            get;
+            private set;
+        }
+
         public NetPeerStats Stats
         {
             get;
@@ -207,7 +213,7 @@ namespace Server
                             {
                                 //Not enough data for a whole packet.
                                 //Skip to the end of the buffer and wait for more
-                                s_log.Trace("Partial packet. Waiting for more data.");
+                                s_log.Trace("Partial packet. Waiting for more data. Length: {0} ReceiveBufferLength: {1} ReceiveBufferPos: {2}", len, m_receiveBuffer.Length, m_receiveBuffer.Position);
                                 m_receiveBuffer.Seek(0, SeekOrigin.End);
                                 break;
                             }
@@ -226,13 +232,14 @@ namespace Server
                     {
                         //If the buffer position and the start of the next packet are aligned,
                         //reset the buffer and start writing from the beginning again.
+                        //s_log.Trace("Aligned pointers");
                         m_receiveBuffer.SetLength(0);
                         m_continueReadFrom = 0;
                     }
 
                     if (m_lastReceiveBufferCapacity != m_receiveBuffer.Capacity)
                     {
-                        //s_log.Trace("Buffer grew to " + m_receiveBuffer.Capacity + " received bytes was " + eventArgs.BytesTransferred);
+                        s_log.Trace("Buffer grew to " + m_receiveBuffer.Capacity + " received bytes was " + eventArgs.BytesTransferred);
                         m_lastReceiveBufferCapacity = m_receiveBuffer.Capacity;
                     }
 
@@ -265,6 +272,7 @@ namespace Server
         public void Dispose()
         {
             m_socket.Dispose();
+            Disposed = true;
         }
 
         protected abstract void DispatchPacket(object packet);

@@ -19,8 +19,7 @@ namespace Server
             while (true)
             {
                 Socket socket = listener.AcceptSocket();
-                PlayerContext playerContext = new PlayerContext(socket);
-                s_world.AcceptPlayer(playerContext);
+                s_world.AcceptSocket(socket);
             }
         }
     }

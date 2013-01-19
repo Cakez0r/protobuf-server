@@ -41,6 +41,8 @@ public class NetworkController : MonoBehaviour
     private void Start()
     {
         Application.runInBackground = true;
+
+        m_tcpClient.NoDelay = true;
     }
 
     public void Connect(string hostname, int port)

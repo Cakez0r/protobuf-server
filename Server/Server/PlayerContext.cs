@@ -8,6 +8,7 @@ using NLog;
 using Protocol;
 using Server.Utility;
 using Server.Zones;
+using System.Threading;
 
 namespace Server
 {
@@ -31,11 +32,37 @@ namespace Server
 
         private WorldState m_worldState = new WorldState() { PlayerStates = new List<PlayerStateUpdate_S2C>() };
 
-        public PlayerContext(Socket socket) : base(socket)
+        private ReaderWriterLockSlim m_zoneLock = new ReaderWriterLockSlim();
+        private Zone m_currentZone;
+        public Zone CurrentZone
+        {
+            get 
+            {
+                Zone currentZone = null;
+
+                m_zoneLock.EnterReadLock();
+                currentZone = m_currentZone;
+                m_zoneLock.ExitReadLock();
+
+                return currentZone; 
+            }
+
+            private set 
+            {
+                m_zoneLock.EnterWriteLock();
+                m_currentZone = value;
+                m_zoneLock.ExitWriteLock();
+            }
+        }
+
+        private ZoneManager m_zoneManager;
+
+        public PlayerContext(Socket socket, ZoneManager zoneManager) : base(socket)
         {
             ID = s_nextID++;
             PlayerState = new PlayerStateUpdate_S2C();
             PlayerState.ID = ID;
+            m_zoneManager = zoneManager;
         }
 
         public void Update(TimeSpan dt)
@@ -57,6 +84,13 @@ namespace Server
                 PlayerState.Y = psu.Y;
                 PlayerState.Rot = psu.Rot;
             }
+            else if (packet is ChatMessage)
+            {
+                ChatMessage cm = (ChatMessage)packet;
+                cm.SenderID = ID;
+                CurrentZone.SendToAllInZone(packet);
+                s_log.Info("Player {0} send to zone {1}: {2}", cm.SenderID, CurrentZone.ID, cm.Message);
+            }
         }
 
         public void IncludeInWorldState(PlayerContext player)
@@ -65,6 +99,29 @@ namespace Server
             {
                 m_worldState.PlayerStates.Add(player.PlayerState);
             }
+        }
+
+        public void DisconnectCleanup()
+        {
+            m_zoneLock.EnterWriteLock();
+            if (m_currentZone != null)
+            {
+                m_currentZone.RemovePlayer(this);
+            }
+            m_zoneLock.ExitWriteLock();
+        }
+
+        public void SwitchZone(int newZoneID)
+        {
+            m_zoneLock.EnterWriteLock();
+            if (m_currentZone != null)
+            {
+                m_currentZone.RemovePlayer(this);
+            }
+            Zone newZone = m_zoneManager.GetZone(newZoneID);
+            newZone.AddPlayer(this);
+            m_currentZone = newZone;
+            m_zoneLock.ExitWriteLock();
         }
     }
 }

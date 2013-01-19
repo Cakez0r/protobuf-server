@@ -56,7 +56,7 @@ namespace Server.Zones
                 {
                     if (p1 != p2)
                     {
-                        if (Vector2.Distance(new Vector2(p1.PlayerState.X, p1.PlayerState.Y), new Vector2(p2.PlayerState.X, p2.PlayerState.Y)) < 25)
+                        if (Vector2.Distance(new Vector2(p1.PlayerState.X, p1.PlayerState.Y), new Vector2(p2.PlayerState.X, p2.PlayerState.Y)) < 1000)
                         {
                             p1.IncludeInWorldState(p2);
                         }
@@ -64,6 +64,16 @@ namespace Server.Zones
                 }
             });
 
+            m_playersLock.ExitReadLock();
+        }
+
+        public void SendToAllInZone(object o)
+        {
+            m_playersLock.EnterReadLock();
+            foreach (PlayerContext p in m_playersInZone.Values)
+            {
+                p.Send(o);
+            }
             m_playersLock.ExitReadLock();
         }
     }

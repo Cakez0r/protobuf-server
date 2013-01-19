@@ -26,37 +26,13 @@ namespace Server.Zones
             });
         }
 
-        public bool EnterZone(PlayerContext p, int zoneID)
+        public Zone GetZone(int zoneID)
         {
             Zone zone = null;
 
-            if (m_zones.TryGetValue(zoneID, out zone))
-            {
-                zone.AddPlayer(p);
-                return true;
-            }
-
-            return false;
-        }
-
-        public bool TransferZone(PlayerContext p, int oldZoneID, int newZoneID)
-        {
-            Zone oldZone = null;
-            Zone newZone = null;
-            if (m_zones.TryGetValue(oldZoneID, out oldZone))
-            {
-                if (m_zones.TryGetValue(newZoneID, out newZone))
-                {
-                    if (oldZone.IsPlayerInZone(p))
-                    {
-                        oldZone.RemovePlayer(p);
-                        newZone.AddPlayer(p);
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            m_zones.TryGetValue(zoneID, out zone);
+            
+            return zone;
         }
     }
 }

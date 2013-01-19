@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using NLog;
 using Server.Utility;
 using Server.Zones;
+using System.Net.Sockets;
 
 namespace Server
 {
@@ -38,14 +39,18 @@ namespace Server
             new Thread(StatsThread).Start();
         }
 
-        public void AcceptPlayer(PlayerContext p)
+        public void AcceptSocket(Socket sock)
         {
+            sock.NoDelay = true;
+
+            PlayerContext p = new PlayerContext(sock, m_zoneManager);
+
             //NOTE: Code here will block the AcceptSocket loop, so make sure it stays lean
             m_playersLock.EnterWriteLock();
             m_players.Add(p);
             m_playersLock.ExitWriteLock();
 
-            m_zoneManager.EnterZone(p, m_rng.Next(0));
+            p.SwitchZone(0);
 
             s_log.Info("Player {0} connected", p.PlayerState.ID);
         }
@@ -69,13 +74,14 @@ namespace Server
                         if (!p.IsConnected)
                         {
                             s_log.Info("Player {0} is disconnected and will be removed", p.PlayerState.ID);
+                            p.DisconnectCleanup();
                             p.Dispose();
                         }
                     });
                 m_playersLock.ExitReadLock();
 
                 m_playersLock.EnterWriteLock();
-                m_players.RemoveAll(p => !p.IsConnected);
+                m_players.RemoveAll(p => p.Disposed);
                 m_playersLock.ExitWriteLock();
 
                 updateTimer.Stop();
