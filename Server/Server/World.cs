@@ -73,7 +73,7 @@ namespace Server
                         p.Update(dt);
                         if (!p.IsConnected)
                         {
-                            s_log.Info("Player {0} is disconnected and will be removed", p.PlayerState.ID);
+                            s_log.Info("{0} is disconnected and will be removed", p.Name);
                             p.DisconnectCleanup();
                             p.Dispose();
                         }

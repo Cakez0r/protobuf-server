@@ -9,6 +9,8 @@ using Protocol;
 using Server.Utility;
 using Server.Zones;
 using System.Threading;
+using Data;
+using Data.Models;
 
 namespace Server
 {
@@ -28,6 +30,17 @@ namespace Server
         {
             get;
             set;
+        }
+
+        public bool IsAuthenticated
+        {
+            get { return m_account != null; }
+        }
+
+        public string Name
+        {
+            get;
+            private set; 
         }
 
         private WorldState m_worldState = new WorldState() { PlayerStates = new List<PlayerStateUpdate_S2C>() };
@@ -57,12 +70,31 @@ namespace Server
 
         private ZoneManager m_zoneManager;
 
+        private ObjectRouter m_unauthenticatedHandler = new ObjectRouter();
+        private ObjectRouter m_authenticatedHandler = new ObjectRouter();
+
+        private AccountModel m_account;
+
+        private static AccountRepository s_accountRepository = new AccountRepository();
+
         public PlayerContext(Socket socket, ZoneManager zoneManager) : base(socket)
         {
             ID = s_nextID++;
+            Name = "Player " + ID;
+
             PlayerState = new PlayerStateUpdate_S2C();
             PlayerState.ID = ID;
             m_zoneManager = zoneManager;
+
+            InitialiseRoutes();
+        }
+
+        private void InitialiseRoutes()
+        {
+            m_unauthenticatedHandler.SetRoute<AuthenticationAttempt_C2S>(Handle_AuthenticationAttempt);
+
+            m_authenticatedHandler.SetRoute<PlayerStateUpdate_C2S>(Handle_PlayerStateUpdate);
+            m_authenticatedHandler.SetRoute<ChatMessage>(Handle_ChatMessage);
         }
 
         public void Update(TimeSpan dt)
@@ -76,20 +108,14 @@ namespace Server
 
         protected override void DispatchPacket(object packet)
         {
-            //TODO: Write some dispatcher...
-            if (packet is PlayerStateUpdate_C2S)
+            bool handled = IsAuthenticated ?
+                m_authenticatedHandler.Route(packet) :
+                m_unauthenticatedHandler.Route(packet);
+
+            if (!handled)
             {
-                PlayerStateUpdate_C2S psu = (PlayerStateUpdate_C2S)packet;
-                PlayerState.X = psu.X;
-                PlayerState.Y = psu.Y;
-                PlayerState.Rot = psu.Rot;
-            }
-            else if (packet is ChatMessage)
-            {
-                ChatMessage cm = (ChatMessage)packet;
-                cm.SenderID = ID;
-                CurrentZone.SendToAllInZone(packet);
-                s_log.Info("Player {0} send to zone {1}: {2}", cm.SenderID, CurrentZone.ID, cm.Message);
+                s_log.Warn("Failed to handle packet of type {0}. Authenticated: {1} Name: ", packet.GetType(), IsAuthenticated, Name);
+                Disconnect();
             }
         }
 
@@ -122,6 +148,40 @@ namespace Server
             newZone.AddPlayer(this);
             m_currentZone = newZone;
             m_zoneLock.ExitWriteLock();
+        }
+
+        private void Handle_PlayerStateUpdate(PlayerStateUpdate_C2S psu)
+        {
+            PlayerState.X = psu.X;
+            PlayerState.Y = psu.Y;
+            PlayerState.Rot = psu.Rot;
+        }
+
+        private void Handle_ChatMessage(ChatMessage cm)
+        {
+            cm.SenderID = ID;
+            CurrentZone.SendToAllInZone(cm);
+            s_log.Info("{0} send to zone {1}: {2}", Name, CurrentZone.ID, cm.Message);
+        }
+
+        private void Handle_AuthenticationAttempt(AuthenticationAttempt_C2S aa)
+        {
+            m_account = s_accountRepository.GetWithLogin(aa.Username, aa.Password);
+
+            AuthenticationAttempt_S2C.ResponseCode result;
+            if (m_account != null)
+            {
+                Name = m_account.Name;
+                result = AuthenticationAttempt_S2C.ResponseCode.OK;
+                s_log.Info("Player {0} authenticated as {1}.", ID, m_account.Name);
+            }
+            else
+            {
+                result = AuthenticationAttempt_S2C.ResponseCode.BadLogin;
+                s_log.Info("Player {0} failed to authenticate. Username: {1} Password: {2}", ID, aa.Username, aa.Password);
+            }
+
+            Send(new AuthenticationAttempt_S2C() { Result = result });
         }
     }
 }
