@@ -3,7 +3,7 @@
 namespace Protocol
 {
     [ProtoContract]
-    public class ChatMessage
+    public class ChatMessage : Packet
     {
         [ProtoMember(1)]
         public int SenderID { get; set; }

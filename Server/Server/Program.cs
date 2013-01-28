@@ -12,6 +12,8 @@ namespace Server
 
         static void Main(string[] args)
         {
+            Protocol.ProtocolUtility.InitialiseSerializer();
+
             TcpListener listener = new TcpListener(IPAddress.Any, 25012);
             listener.Start();
             s_log.Info("Started!");

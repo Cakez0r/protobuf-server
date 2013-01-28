@@ -3,7 +3,7 @@
 namespace Protocol
 {
     [ProtoContract]
-    public class PlayerStateUpdate_C2S
+    public class PlayerStateUpdate_C2S : Packet
     {
         [ProtoMember(1)]
         public float X { get; set; }
@@ -16,7 +16,7 @@ namespace Protocol
     }
 
     [ProtoContract]
-    public class PlayerStateUpdate_S2C
+    public class PlayerStateUpdate_S2C : Packet
     {
         [ProtoMember(1)]
         public float X { get; set; }
@@ -28,6 +28,6 @@ namespace Protocol
         public float Rot { get; set; }
 
         [ProtoMember(4)]
-        public int ID { get; set; }
+        public int PlayerID { get; set; }
     }
 }

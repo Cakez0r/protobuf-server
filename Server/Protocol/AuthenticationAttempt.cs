@@ -3,7 +3,7 @@
 namespace Protocol
 {
     [ProtoContract]
-    public class AuthenticationAttempt_C2S
+    public class AuthenticationAttempt_C2S : Packet
     {
         [ProtoMember(1)]
         public string Username { get; set; }
@@ -13,7 +13,7 @@ namespace Protocol
     }
 
     [ProtoContract]
-    public class AuthenticationAttempt_S2C
+    public class AuthenticationAttempt_S2C : Packet
     {
         public enum ResponseCode
         {

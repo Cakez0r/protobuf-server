@@ -6,6 +6,8 @@ using Protocol;
 using System.Threading;
 using System.Collections.Generic;
 using System.Collections;
+using Assets.Network;
+using System.Linq;
 
 public enum NetworkState
 {
@@ -14,10 +16,41 @@ public enum NetworkState
     Connected
 }
 
+public class ConnectionLostException : Exception
+{
+    public ConnectionLostException() : base("Connection to the server was lost before a response was received") { } 
+}
+
+public class UnexpectedResponseTypeException : Exception
+{
+    public UnexpectedResponseTypeException() : base("Got an unexpected response type for the request.") { }
+}
+
 public class NetworkController : MonoBehaviour
 {
     [SerializeField]
     private UnityScheduler m_scheduler;
+
+    [SerializeField]
+    private int m_responseTimeoutMilliseconds = 5000;
+
+
+    private class PendingResponse
+    {
+        public Action<Packet> OnCompletion { get; private set; }
+        public Action<Exception> OnException { get; private set; }
+        public DateTime StartTime { get; private set; }
+        public TimeSpan Timeout { get; private set; }
+
+        public PendingResponse(Action<Packet> completionHandler, Action<Exception> exceptionHandler, TimeSpan timeout)
+        {
+            OnCompletion = completionHandler;
+            OnException = exceptionHandler;
+            Timeout = timeout;
+            StartTime = DateTime.Now;
+        }
+    }
+
 
     public NetworkState State
     {
@@ -29,9 +62,15 @@ public class NetworkController : MonoBehaviour
     private NetworkStream m_networkStream;
     private Thread m_receiveThread;
 
-    Dictionary<Type, Delegate> m_handlers = new Dictionary<Type, Delegate>();
+    private Dictionary<Type, Delegate> m_handlers = new Dictionary<Type, Delegate>();
+
+    private Dictionary<ushort, PendingResponse> m_pendingResponses = new Dictionary<ushort, PendingResponse>();
+
+    private List<ushort> m_timedOutResponses = new List<ushort>();
 
     private bool m_runReceiveThread = true;
+
+    private ushort m_nextRequestID = 1;
 
     public NetworkController()
     {
@@ -41,6 +80,8 @@ public class NetworkController : MonoBehaviour
     private void Start()
     {
         Application.runInBackground = true;
+
+        ProtocolUtility.InitialiseSerializer();
 
         m_tcpClient.NoDelay = true;
     }
@@ -74,7 +115,7 @@ public class NetworkController : MonoBehaviour
         }
     }
 
-    public void Send(object o)
+    public void Send(Packet packet)
     {
         if (State != NetworkState.Connected)
         {
@@ -82,7 +123,7 @@ public class NetworkController : MonoBehaviour
             return;
         }
 
-        int? packetCode = ProtocolUtility.GetPacketTypeCode(o.GetType());
+        int? packetCode = ProtocolUtility.GetPacketTypeCode(packet.GetType());
 
         if (packetCode == null)
         {
@@ -90,7 +131,45 @@ public class NetworkController : MonoBehaviour
             return;
         }
 
-        Serializer.NonGeneric.SerializeWithLengthPrefix(m_networkStream, o, PrefixStyle.Base128, packetCode.Value);
+        Debug.Log("Sending with id: " + packet.ID);
+
+        Serializer.NonGeneric.SerializeWithLengthPrefix(m_networkStream, packet, PrefixStyle.Base128, packetCode.Value);
+    }
+
+    public Future<T> SendWithResponse<T>(Packet request) where T : Packet
+    {
+        Future<T> future = new Future<T>();
+
+        PendingResponse pendingResponse = new PendingResponse
+        (
+            (response) => { RequestCompletionHandler<T>(future, response); },
+            (exception) => { future.SetException(exception); },
+            TimeSpan.FromMilliseconds(m_responseTimeoutMilliseconds)
+        );
+
+        request.ID = m_nextRequestID++;
+
+        m_pendingResponses.Add(request.ID, pendingResponse);
+
+        Send(request);
+
+        return future;
+    }
+
+    private void RequestCompletionHandler<T>(Future<T> future, Packet response) where T : Packet
+    {
+        try
+        {
+            future.SetResult((T)response);
+        }
+        catch (InvalidCastException)
+        {
+            future.SetException(new UnexpectedResponseTypeException());
+        }
+        catch (Exception ex)
+        {
+            future.SetException(ex);
+        }
     }
 
     private void Update()
@@ -99,6 +178,19 @@ public class NetworkController : MonoBehaviour
         {
             DisconnectCleanup();
         }
+
+        foreach (KeyValuePair<ushort, PendingResponse> pendingResponse in m_pendingResponses.Where(pr => DateTime.Now - pr.Value.StartTime > pr.Value.Timeout))
+        {
+            pendingResponse.Value.OnException(new TimeoutException());
+            m_timedOutResponses.Add(pendingResponse.Key);
+        }
+
+        foreach (ushort timedOutResponse in m_timedOutResponses)
+        {
+            m_pendingResponses.Remove(timedOutResponse);
+        }
+
+        m_timedOutResponses.Clear();
     }
 
     public void RegisterHandler<T>(Action<T> handler)
@@ -123,7 +215,7 @@ public class NetworkController : MonoBehaviour
         }
     }
 
-    private void DispatchPacket(object o)
+    private void DispatchPacket(Packet o)
     {
         Delegate handler = null;
 
@@ -139,6 +231,13 @@ public class NetworkController : MonoBehaviour
     {
         State = NetworkState.Disconnected;
         Debug.Log("Disconnected");
+
+        foreach (PendingResponse pendingResponse in m_pendingResponses.Values)
+        {
+            pendingResponse.OnException(new ConnectionLostException());
+        }
+
+        m_pendingResponses.Clear();
     }
 
     private void OnApplicationQuit()
@@ -158,11 +257,19 @@ public class NetworkController : MonoBehaviour
             {
                 try
                 {
-                    object packet = null;
+                    object obj = null;
 
-                    if (Serializer.NonGeneric.TryDeserializeWithLengthPrefix(m_networkStream, PrefixStyle.Base128, ProtocolUtility.GetPacketType, out packet))
+                    if (Serializer.NonGeneric.TryDeserializeWithLengthPrefix(m_networkStream, PrefixStyle.Base128, ProtocolUtility.GetPacketType, out obj))
                     {
-                        m_scheduler.Schedule(() => DispatchPacket(packet));
+                        Packet packet = (Packet)obj;
+                        if (m_pendingResponses.ContainsKey(packet.ID))
+                        {
+                            m_pendingResponses[packet.ID].OnCompletion(packet);
+                        }
+                        else
+                        {
+                            m_scheduler.Schedule(() => DispatchPacket(packet));
+                        }
                     }
                     else
                     {

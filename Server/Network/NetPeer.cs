@@ -1,14 +1,14 @@
-﻿using NLog;
-using ProtoBuf;
-using Protocol;
-using Server.Utility;
-using System;
+﻿using System;
 using System.IO;
 using System.Net.Sockets;
 using System.ServiceModel.Channels;
 using System.Threading;
+using NLog;
+using ProtoBuf;
+using Protocol;
+using Server.Utility;
 
-namespace Server
+namespace Network
 {
     public class NetPeerStats
     {
@@ -78,16 +78,9 @@ namespace Server
             }
         }
 
-        public void Respond(Packet p, Packet response)
+        public void Send(object o)
         {
-            response.ID = p.ID;
-            s_log.Warn("Responding with id: " + response.ID);
-            Send(response);
-        }
-
-        public void Send(Packet p)
-        {
-            int? packetCode = ProtocolUtility.GetPacketTypeCode(p.GetType());
+            int? packetCode = ProtocolUtility.GetPacketTypeCode(o.GetType());
 
             if (packetCode != null)
             {
@@ -99,7 +92,7 @@ namespace Server
                         long size = 0;
                         using (MemoryStream memoryStream = new MemoryStream(buffer))
                         {
-                            Serializer.NonGeneric.SerializeWithLengthPrefix(memoryStream, p, PrefixStyle.Base128, packetCode.Value);
+                            Serializer.NonGeneric.SerializeWithLengthPrefix(memoryStream, o, PrefixStyle.Base128, packetCode.Value);
                             size = memoryStream.Position;
                         }
 
@@ -121,7 +114,7 @@ namespace Server
             }
             else
             {
-                s_log.Warn("Tried to send a type that isn't part of the protocol: " + p.GetType());
+                s_log.Warn("Tried to send a type that isn't part of the protocol: " + o.GetType());
             }
         }
 
@@ -201,7 +194,7 @@ namespace Server
                                 if (Serializer.NonGeneric.TryDeserializeWithLengthPrefix(m_receiveBuffer, PrefixStyle.Base128, ProtocolUtility.GetPacketType, out obj))
                                 {
                                     //Deserialize one packet
-                                    Packet packet = (Packet)obj;
+                                    object packet = obj;
                                     m_fiber.Enqueue(() => DispatchPacket(packet));
                                     Interlocked.Increment(ref Stats.MessagesReceived);
 
@@ -282,6 +275,6 @@ namespace Server
             Disposed = true;
         }
 
-        protected abstract void DispatchPacket(Packet packet);
+        protected abstract void DispatchPacket(object packet);
     }
 }

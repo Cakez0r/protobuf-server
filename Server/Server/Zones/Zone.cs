@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Server.Utility;
+using Protocol;
 
 namespace Server.Zones
 {
@@ -67,7 +68,7 @@ namespace Server.Zones
             m_playersLock.ExitReadLock();
         }
 
-        public void SendToAllInZone(object o)
+        public void SendToAllInZone(Packet o)
         {
             m_playersLock.EnterReadLock();
             foreach (PlayerContext p in m_playersInZone.Values)

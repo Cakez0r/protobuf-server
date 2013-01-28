@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using ProtoBuf;
+using ProtoBuf.Meta;
 
 namespace Protocol
 {
@@ -40,6 +41,23 @@ namespace Protocol
                 return code;
             }
             return null;
+        }
+
+        public static void InitialiseSerializer()
+        {
+            Type packetType = typeof(Packet);
+            Assembly protocolAssembly = Assembly.GetAssembly(packetType);
+            Type[] types = protocolAssembly.GetTypes();
+
+            MetaType metaType = RuntimeTypeModel.Default.Add(packetType, true);
+
+            //Count how many ProtoMembers Packet has and start tagging from there
+            int startTag = packetType.GetProperties().Where(p => p.GetCustomAttributes(typeof(ProtoMemberAttribute), false).Count() > 0).Count() + 1;
+
+            foreach (Type packetSubclass in types.Where(t => t.IsSubclassOf(packetType)))
+            {
+                metaType.AddSubType(startTag++, packetSubclass);
+            }
         }
     }
 }

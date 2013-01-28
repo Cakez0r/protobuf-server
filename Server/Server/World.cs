@@ -52,7 +52,7 @@ namespace Server
 
             p.SwitchZone(0);
 
-            s_log.Info("Player {0} connected", p.PlayerState.ID);
+            s_log.Info("Player {0} connected", p.PlayerState.PlayerID);
         }
 
         private void WorldUpdate()

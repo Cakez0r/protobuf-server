@@ -83,7 +83,7 @@ namespace Server
             Name = "Player " + ID;
 
             PlayerState = new PlayerStateUpdate_S2C();
-            PlayerState.ID = ID;
+            PlayerState.PlayerID = ID;
             m_zoneManager = zoneManager;
 
             InitialiseRoutes();
@@ -99,14 +99,17 @@ namespace Server
 
         public void Update(TimeSpan dt)
         {
-            lock (m_worldState)
+            if (IsAuthenticated)
             {
-                Send(m_worldState);
-                m_worldState.PlayerStates.Clear();
+                lock (m_worldState)
+                {
+                    Send(m_worldState);
+                    m_worldState.PlayerStates.Clear();
+                }
             }
         }
 
-        protected override void DispatchPacket(object packet)
+        protected override void DispatchPacket(Packet packet)
         {
             bool handled = IsAuthenticated ?
                 m_authenticatedHandler.Route(packet) :
@@ -181,7 +184,7 @@ namespace Server
                 s_log.Info("Player {0} failed to authenticate. Username: {1} Password: {2}", ID, aa.Username, aa.Password);
             }
 
-            Send(new AuthenticationAttempt_S2C() { Result = result });
+            Respond(aa, new AuthenticationAttempt_S2C() { Result = result });
         }
     }
 }
