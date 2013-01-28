@@ -23,7 +23,7 @@ public class ConnectionLostException : Exception
 
 public class UnexpectedResponseTypeException : Exception
 {
-    public UnexpectedResponseTypeException() : base("Got an unexpected response type for the request.") { }
+    public UnexpectedResponseTypeException(InvalidCastException innerException) : base("Got an unexpected response type for the request.", innerException) { }
 }
 
 public class NetworkController : MonoBehaviour
@@ -162,9 +162,9 @@ public class NetworkController : MonoBehaviour
         {
             future.SetResult((T)response);
         }
-        catch (InvalidCastException)
+        catch (InvalidCastException ex)
         {
-            future.SetException(new UnexpectedResponseTypeException());
+            future.SetException(new UnexpectedResponseTypeException(ex));
         }
         catch (Exception ex)
         {
