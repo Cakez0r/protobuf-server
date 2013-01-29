@@ -81,7 +81,6 @@ namespace Server
         public void Respond(Packet p, Packet response)
         {
             response.ID = p.ID;
-            s_log.Warn("Responding with id: " + response.ID);
             Send(response);
         }
 
