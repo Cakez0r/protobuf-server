@@ -44,6 +44,7 @@
     <Compile Include="AuthenticationAttempt.cs" />
     <Compile Include="ChatMessage.cs" />
     <Compile Include="Packet.cs" />
+    <Compile Include="PlayerIntroduction.cs" />
     <Compile Include="PlayerStateUpdate.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ProtocolUtility.cs" />

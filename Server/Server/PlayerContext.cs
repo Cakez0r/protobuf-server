@@ -29,7 +29,7 @@ namespace Server
         public PlayerStateUpdate_S2C PlayerState
         {
             get;
-            set;
+            private set;
         }
 
         public bool IsAuthenticated
@@ -42,6 +42,9 @@ namespace Server
             get;
             private set; 
         }
+
+        private ReaderWriterLockSlim m_introductionLock = new ReaderWriterLockSlim();
+        private HashSet<int> m_hasBeenIntroducedTo = new HashSet<int>();
 
         private WorldState m_worldState = new WorldState() { PlayerStates = new List<PlayerStateUpdate_S2C>() };
 
@@ -124,9 +127,19 @@ namespace Server
 
         public void IncludeInWorldState(PlayerContext player)
         {
+            PlayerStateUpdate_S2C psu = player.HasBeenIntroducedTo(ID) ? player.PlayerState :
+                new PlayerStateUpdate_S2C()
+                {
+                    PlayerID = player.ID,
+                    X = player.PlayerState.X,
+                    Y = player.PlayerState.Y,
+                    Rot = player.PlayerState.Rot,
+                    Introduction = player.GetIntroductionFor(ID)
+                };
+            
             lock (m_worldState)
             {
-                m_worldState.PlayerStates.Add(player.PlayerState);
+                m_worldState.PlayerStates.Add(psu);
             }
         }
 
@@ -151,6 +164,24 @@ namespace Server
             newZone.AddPlayer(this);
             m_currentZone = newZone;
             m_zoneLock.ExitWriteLock();
+        }
+
+        public bool HasBeenIntroducedTo(int id)
+        {
+            m_introductionLock.EnterReadLock();
+            bool introduced = m_hasBeenIntroducedTo.Contains(id);
+            m_introductionLock.ExitReadLock();
+
+            return introduced;
+        }
+
+        public PlayerIntroduction GetIntroductionFor(int id)
+        {
+            m_introductionLock.EnterWriteLock();
+            m_hasBeenIntroducedTo.Add(id);
+            m_introductionLock.ExitWriteLock();
+
+            return new PlayerIntroduction() { Name = Name };
         }
 
         private void Handle_PlayerStateUpdate(PlayerStateUpdate_C2S psu)
@@ -184,7 +215,7 @@ namespace Server
                 s_log.Info("Player {0} failed to authenticate. Username: {1} Password: {2}", ID, aa.Username, aa.Password);
             }
 
-            Respond(aa, new AuthenticationAttempt_S2C() { Result = result });
+            Respond(aa, new AuthenticationAttempt_S2C() { Result = result, PlayerID = ID });
         }
     }
 }

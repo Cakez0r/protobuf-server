@@ -29,5 +29,8 @@ namespace Protocol
 
         [ProtoMember(4)]
         public int PlayerID { get; set; }
+
+        [ProtoMember(5)]
+        public PlayerIntroduction Introduction { get; set; }
     }
 }
