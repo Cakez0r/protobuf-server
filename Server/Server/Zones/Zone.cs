@@ -57,7 +57,7 @@ namespace Server.Zones
                 {
                     if (p1 != p2)
                     {
-                        if (Vector2.Distance(new Vector2(p1.PlayerState.X, p1.PlayerState.Y), new Vector2(p2.PlayerState.X, p2.PlayerState.Y)) < 1000)
+                        if (Vector2.Distance(new Vector2(p1.PlayerState.X, p1.PlayerState.Y), new Vector2(p2.PlayerState.X, p2.PlayerState.Y)) < 30)
                         {
                             p1.IncludeInWorldState(p2);
                         }

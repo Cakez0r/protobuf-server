@@ -13,6 +13,9 @@ namespace Protocol
         
         [ProtoMember(3)]
         public float Rot { get; set; }
+
+        [ProtoMember(4)]
+        public int? TargetID { get; set; }
     }
 
     [ProtoContract]
@@ -32,5 +35,14 @@ namespace Protocol
 
         [ProtoMember(5)]
         public PlayerIntroduction Introduction { get; set; }
+
+        [ProtoMember(6)]
+        public int? TargetID { get; set; }
+
+        [ProtoMember(7)]
+        public int CurrentHP { get; set; }
+
+        [ProtoMember(8)]
+        public int MaxHP { get; set; }
     }
 }

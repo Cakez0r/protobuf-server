@@ -17,7 +17,7 @@ namespace Server
 
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
-        private List<PlayerContext> m_players = new List<PlayerContext>();
+        private Dictionary<int, PlayerContext> m_players = new Dictionary<int, PlayerContext>();
         private ReaderWriterLockSlim m_playersLock = new ReaderWriterLockSlim();
 
         private Thread m_worldUpdateThread;
@@ -26,6 +26,8 @@ namespace Server
         private ZoneManager m_zoneManager = new ZoneManager();
 
         private Random m_rng = new Random((int)DateTime.Now.Ticks);
+
+        private List<int> m_disposedPlayerList = new List<int>();
 
         static World()
         {
@@ -47,7 +49,7 @@ namespace Server
 
             //NOTE: Code here will block the AcceptSocket loop, so make sure it stays lean
             m_playersLock.EnterWriteLock();
-            m_players.Add(p);
+            m_players.Add(p.ID, p);
             m_playersLock.ExitWriteLock();
 
             p.SwitchZone(0);
@@ -68,7 +70,7 @@ namespace Server
                 m_zoneManager.Update(dt);
                 m_playersLock.EnterReadLock();
 
-                Parallel.ForEach(m_players, p =>
+                Parallel.ForEach(m_players.Values, p =>
                     {
                         p.Update(dt);
                         if (!p.IsConnected)
@@ -76,12 +78,16 @@ namespace Server
                             s_log.Info("{0} is disconnected and will be removed", p.Name);
                             p.DisconnectCleanup();
                             p.Dispose();
+                            lock (m_disposedPlayerList) m_disposedPlayerList.Add(p.ID);
                         }
                     });
                 m_playersLock.ExitReadLock();
 
                 m_playersLock.EnterWriteLock();
-                m_players.RemoveAll(p => p.Disposed);
+                foreach (int i in m_disposedPlayerList)
+                {
+                    m_players.Remove(i);
+                }
                 m_playersLock.ExitWriteLock();
 
                 updateTimer.Stop();
@@ -108,8 +114,8 @@ namespace Server
             while (true)
             {
                 m_playersLock.EnterReadLock();
-                long sent = m_players.Select(p => p.Stats.MessagesSent).Sum();
-                long received = m_players.Select(p => p.Stats.MessagesReceived).Sum();
+                long sent = m_players.Values.Select(p => p.Stats.MessagesSent).Sum();
+                long received = m_players.Values.Select(p => p.Stats.MessagesReceived).Sum();
 
                 Console.Title = "Players: " + m_players.Count() + " - In/Sec: " + (received - lastMessagesReceived) + " - Out/Sec " + (sent - lastMessagesSent);
                 m_playersLock.ExitReadLock();
@@ -119,6 +125,16 @@ namespace Server
 
                 Thread.Sleep(1000);
             }
+        }
+
+        public PlayerContext GetPlayerByID(int id)
+        {
+            m_playersLock.EnterReadLock();
+            PlayerContext pc = default(PlayerContext);
+            m_players.TryGetValue(id, out pc);
+            m_playersLock.ExitReadLock();
+            
+            return pc;
         }
     }
 }

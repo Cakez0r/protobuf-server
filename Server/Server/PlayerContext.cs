@@ -86,7 +86,11 @@ namespace Server
             Name = "Player " + ID;
 
             PlayerState = new PlayerStateUpdate_S2C();
+            
             PlayerState.PlayerID = ID;
+            PlayerState.MaxHP = 100;
+            PlayerState.CurrentHP = 100;
+
             m_zoneManager = zoneManager;
 
             InitialiseRoutes();
@@ -134,7 +138,10 @@ namespace Server
                     X = player.PlayerState.X,
                     Y = player.PlayerState.Y,
                     Rot = player.PlayerState.Rot,
-                    Introduction = player.GetIntroductionFor(ID)
+                    Introduction = player.GetIntroductionFor(ID),
+                    TargetID = player.PlayerState.TargetID,
+                    CurrentHP = player.PlayerState.CurrentHP,
+                    MaxHP = player.PlayerState.MaxHP
                 };
             
             lock (m_worldState)
@@ -189,6 +196,12 @@ namespace Server
             PlayerState.X = psu.X;
             PlayerState.Y = psu.Y;
             PlayerState.Rot = psu.Rot;
+
+            if (psu.TargetID != PlayerState.TargetID)
+            {
+                s_log.Trace("{0} is now targetting {1}", Name, psu.TargetID == null ? "[Nothing]" : Global.World.GetPlayerByID(psu.TargetID.Value).Name);
+            }
+            PlayerState.TargetID = psu.TargetID;
         }
 
         private void Handle_ChatMessage(ChatMessage cm)
