@@ -29,6 +29,11 @@ namespace Server
 
         private List<int> m_disposedPlayerList = new List<int>();
 
+        public int Clock
+        {
+            get { return Environment.TickCount; }
+        }
+
         static World()
         {
         }

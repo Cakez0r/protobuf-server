@@ -8,5 +8,8 @@ namespace Protocol
     {
         [ProtoMember(1)]
         public List<PlayerStateUpdate_S2C> PlayerStates { get; set; }
+
+        [ProtoMember(2)]
+        public int CurrentServerTime { get; set; }
     }
 }

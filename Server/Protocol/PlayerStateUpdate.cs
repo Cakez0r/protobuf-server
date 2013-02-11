@@ -16,6 +16,9 @@ namespace Protocol
 
         [ProtoMember(4)]
         public int? TargetID { get; set; }
+
+        [ProtoMember(5)]
+        public int Time { get; set; }
     }
 
     [ProtoContract]
@@ -44,5 +47,8 @@ namespace Protocol
 
         [ProtoMember(8)]
         public int MaxHP { get; set; }
+
+        [ProtoMember(9)]
+        public int Time { get; set; }
     }
 }

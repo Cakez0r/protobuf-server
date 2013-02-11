@@ -99,9 +99,11 @@ namespace Server
         private void InitialiseRoutes()
         {
             m_unauthenticatedHandler.SetRoute<AuthenticationAttempt_C2S>(Handle_AuthenticationAttempt);
+            m_unauthenticatedHandler.SetRoute<TimeSync_C2S>(Handle_TimeSync);
 
             m_authenticatedHandler.SetRoute<PlayerStateUpdate_C2S>(Handle_PlayerStateUpdate);
             m_authenticatedHandler.SetRoute<ChatMessage>(Handle_ChatMessage);
+            m_authenticatedHandler.SetRoute<TimeSync_C2S>(Handle_TimeSync);
         }
 
         public void Update(TimeSpan dt)
@@ -110,6 +112,7 @@ namespace Server
             {
                 lock (m_worldState)
                 {
+                    m_worldState.CurrentServerTime = Global.World.Clock;
                     Send(m_worldState);
                     m_worldState.PlayerStates.Clear();
                 }
@@ -141,7 +144,8 @@ namespace Server
                     Introduction = player.GetIntroductionFor(ID),
                     TargetID = player.PlayerState.TargetID,
                     CurrentHP = player.PlayerState.CurrentHP,
-                    MaxHP = player.PlayerState.MaxHP
+                    MaxHP = player.PlayerState.MaxHP,
+                    Time = player.PlayerState.Time
                 };
             
             lock (m_worldState)
@@ -202,6 +206,8 @@ namespace Server
                 s_log.Trace("{0} is now targetting {1}", Name, psu.TargetID == null ? "[Nothing]" : Global.World.GetPlayerByID(psu.TargetID.Value).Name);
             }
             PlayerState.TargetID = psu.TargetID;
+
+            PlayerState.Time = psu.Time;
         }
 
         private void Handle_ChatMessage(ChatMessage cm)
@@ -229,6 +235,12 @@ namespace Server
             }
 
             Respond(aa, new AuthenticationAttempt_S2C() { Result = result, PlayerID = ID });
+        }
+
+        private void Handle_TimeSync(TimeSync_C2S sync)
+        {
+            s_log.Trace("Time sync request from ID {0}", ID);
+            Respond(sync, new TimeSync_S2C() { Time = Global.World.Clock });
         }
     }
 }
