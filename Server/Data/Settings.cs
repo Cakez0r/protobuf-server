@@ -8,6 +8,6 @@ namespace Data
 {
     public class Settings
     {
-        public const string ConnectionString = "Server=localhost;Database=game;Uid=root;Pwd=;";
+        public const string ConnectionString = "Server=dbhost;Database=game;Uid=root;Pwd=DBPassw0rd!;";
     }
 }

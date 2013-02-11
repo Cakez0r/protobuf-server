@@ -19,6 +19,12 @@ namespace Protocol
 
         [ProtoMember(5)]
         public int Time { get; set; }
+
+        [ProtoMember(6)]
+        public float VelX { get; set; }
+
+        [ProtoMember(7)]
+        public float VelY { get; set; }
     }
 
     [ProtoContract]
@@ -50,5 +56,11 @@ namespace Protocol
 
         [ProtoMember(9)]
         public int Time { get; set; }
+
+        [ProtoMember(10)]
+        public float VelX { get; set; }
+
+        [ProtoMember(11)]
+        public float VelY { get; set; }
     }
 }

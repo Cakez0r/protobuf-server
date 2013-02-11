@@ -140,6 +140,8 @@ namespace Server
                     PlayerID = player.ID,
                     X = player.PlayerState.X,
                     Y = player.PlayerState.Y,
+                    VelX = player.PlayerState.VelX,
+                    VelY = player.PlayerState.VelY,
                     Rot = player.PlayerState.Rot,
                     Introduction = player.GetIntroductionFor(ID),
                     TargetID = player.PlayerState.TargetID,
@@ -199,6 +201,8 @@ namespace Server
         {
             PlayerState.X = psu.X;
             PlayerState.Y = psu.Y;
+            PlayerState.VelX = psu.VelX;
+            PlayerState.VelY = psu.VelY;
             PlayerState.Rot = psu.Rot;
 
             if (psu.TargetID != PlayerState.TargetID)
@@ -235,6 +239,9 @@ namespace Server
             }
 
             Respond(aa, new AuthenticationAttempt_S2C() { Result = result, PlayerID = ID });
+
+            //m_account = new AccountModel();
+            //Respond(aa, new AuthenticationAttempt_S2C() { Result = AuthenticationAttempt_S2C.ResponseCode.OK, PlayerID = ID });
         }
 
         private void Handle_TimeSync(TimeSync_C2S sync)

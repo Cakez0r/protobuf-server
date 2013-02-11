@@ -8,8 +8,6 @@ namespace Data
 {
     public static class MySQL
     {
-        private const string CONNECTION_STRING = "Server=localhost;Database=game;Uid=root;Pwd=;";
-
         public static bool TestConnection(out Exception exception)
         {
             exception = null;
