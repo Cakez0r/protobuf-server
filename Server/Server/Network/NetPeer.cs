@@ -20,7 +20,7 @@ namespace Server
 
     public abstract class NetPeer : IDisposable
     {
-        private const int BUFFER_SIZE = 4096;
+        private const int BUFFER_SIZE = 8192;
 
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
@@ -52,7 +52,7 @@ namespace Server
 
         static NetPeer()
         {
-            s_buffers = BufferManager.CreateBufferManager(1024 * 1024 * 1024 * 2L, 2048);
+            s_buffers = BufferManager.CreateBufferManager(1024 * 1024 * 1024 * 2L, BUFFER_SIZE);
         }
 
         public NetPeer(Socket socket)
