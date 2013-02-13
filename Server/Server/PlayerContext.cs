@@ -216,7 +216,7 @@ namespace Server
 
         private void Handle_ChatMessage(ChatMessage cm)
         {
-            cm.SenderID = ID;
+            cm.SenderName = Name;
             CurrentZone.SendToAllInZone(cm);
             s_log.Info("{0} send to zone {1}: {2}", Name, CurrentZone.ID, cm.Message);
         }
@@ -239,9 +239,6 @@ namespace Server
             }
 
             Respond(aa, new AuthenticationAttempt_S2C() { Result = result, PlayerID = ID });
-
-            //m_account = new AccountModel();
-            //Respond(aa, new AuthenticationAttempt_S2C() { Result = AuthenticationAttempt_S2C.ResponseCode.OK, PlayerID = ID });
         }
 
         private void Handle_TimeSync(TimeSync_C2S sync)
