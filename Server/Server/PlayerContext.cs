@@ -78,6 +78,9 @@ namespace Server
 
         private AccountModel m_account;
 
+        private int m_lastActivity = Environment.TickCount;
+        private const int PING_TIMEOUT = 5000;
+
         private static AccountRepository s_accountRepository = new AccountRepository();
 
         public PlayerContext(Socket socket, ZoneManager zoneManager) : base(socket)
@@ -117,6 +120,12 @@ namespace Server
                     m_worldState.PlayerStates.Clear();
                 }
             }
+
+            if (Environment.TickCount - m_lastActivity > PING_TIMEOUT)
+            {
+                Send(new Ping());
+                m_lastActivity = Environment.TickCount;
+            }
         }
 
         protected override void DispatchPacket(Packet packet)
@@ -130,6 +139,8 @@ namespace Server
                 s_log.Warn("Failed to handle packet of type {0}. Authenticated: {1} Name: ", packet.GetType(), IsAuthenticated, Name);
                 Disconnect();
             }
+
+            m_lastActivity = Environment.TickCount;
         }
 
         public void IncludeInWorldState(PlayerContext player)

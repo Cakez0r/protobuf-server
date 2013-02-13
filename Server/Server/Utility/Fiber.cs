@@ -8,7 +8,7 @@ namespace Server.Utility
     {
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
-        ActionBlock<Action> m_workQueue;
+        private ActionBlock<Action> m_workQueue;
 
         public Fiber()
         {
@@ -19,7 +19,7 @@ namespace Server.Utility
         {
             if (!m_workQueue.Post(a))
             {
-                s_log.Warn("Failed to post work to a fiber.");
+                s_log.Warn("Failed to post work to a fiber. Work queue is full.");
             }
         }
     }

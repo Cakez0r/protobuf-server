@@ -32,6 +32,17 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unity|AnyCPU'">
+    <OutputPath>..\..\..\..\..\..\..\..\Game\Assets\Scripts\Network\</OutputPath>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <Optimize>true</Optimize>
+    <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -44,6 +55,7 @@
   <ItemGroup>
     <Compile Include="AuthenticationAttempt.cs" />
     <Compile Include="ChatMessage.cs" />
+    <Compile Include="Ping.cs" />
     <Compile Include="Packet.cs" />
     <Compile Include="PlayerIntroduction.cs" />
     <Compile Include="PlayerStateUpdate.cs" />
