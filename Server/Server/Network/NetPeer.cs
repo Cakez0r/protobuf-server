@@ -10,14 +10,6 @@ using System.Threading;
 
 namespace Server
 {
-    public class NetPeerStats
-    {
-        public long BytesSent;
-        public long BytesReceived;
-        public long MessagesSent;
-        public long MessagesReceived;
-    }
-
     public abstract class NetPeer : IDisposable
     {
         private const int BUFFER_SIZE = 8192;
@@ -39,12 +31,6 @@ namespace Server
             private set;
         }
 
-        public NetPeerStats Stats
-        {
-            get;
-            private set;
-        }
-
         public bool IsConnected 
         {
             get { return m_socket.Connected; }
@@ -57,8 +43,6 @@ namespace Server
 
         public NetPeer(Socket socket)
         {
-            Stats = new NetPeerStats();
-
             m_receiveBuffer = new MemoryStream();
             m_socket = socket;
             StartReceiving();
@@ -126,12 +110,8 @@ namespace Server
 
         private void SendCompleted(object o, SocketAsyncEventArgs eventArgs)
         {
-            Interlocked.Add(ref Stats.BytesSent, eventArgs.BytesTransferred);
-
             s_buffers.ReturnBuffer(eventArgs.Buffer);
             eventArgs.Dispose();
-
-            Interlocked.Increment(ref Stats.MessagesSent);
         }
 
         private void StartReceiving()
@@ -174,7 +154,8 @@ namespace Server
                     int len = 0;
 
                     //Until we reach the end of the buffer...
-                    while (m_receiveBuffer.Position < m_receiveBuffer.Length)
+                    long bufferLength = m_receiveBuffer.Length;
+                    while (m_receiveBuffer.Position < bufferLength)
                     {
                         //Find out how much data we need before we can deserialize
                         bool gotLength = false;
@@ -193,7 +174,7 @@ namespace Server
                         if (gotLength)
                         {
                             //If we have enough data to deserialize...
-                            if (m_receiveBuffer.Length - m_receiveBuffer.Position >= len)
+                            if (bufferLength - m_receiveBuffer.Position >= len)
                             {
                                 //Rewind back to the start of the packet
                                 m_receiveBuffer.Seek(m_continueReadFrom, SeekOrigin.Begin);
@@ -202,7 +183,6 @@ namespace Server
                                     //Deserialize one packet
                                     Packet packet = (Packet)obj;
                                     m_fiber.Enqueue(() => DispatchPacket(packet));
-                                    Interlocked.Increment(ref Stats.MessagesReceived);
 
                                     //Update pointer to the beginning of the next packet
                                     m_continueReadFrom = m_receiveBuffer.Position;
@@ -248,8 +228,6 @@ namespace Server
                         s_log.Trace("Buffer grew to " + m_receiveBuffer.Capacity + " received bytes was " + eventArgs.BytesTransferred);
                         m_lastReceiveBufferCapacity = m_receiveBuffer.Capacity;
                     }
-
-                    Interlocked.Add(ref Stats.BytesReceived, eventArgs.BytesTransferred);
 
                     Receive(eventArgs);
                 }

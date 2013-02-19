@@ -8,6 +8,7 @@ using NLog;
 using Server.Utility;
 using Server.Zones;
 using System.Net.Sockets;
+using System.Collections.Concurrent;
 
 namespace Server
 {
@@ -17,8 +18,7 @@ namespace Server
 
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
-        private Dictionary<int, PlayerContext> m_players = new Dictionary<int, PlayerContext>();
-        private ReaderWriterLockSlim m_playersLock = new ReaderWriterLockSlim();
+        private ConcurrentDictionary<int, PlayerContext> m_players = new ConcurrentDictionary<int, PlayerContext>();
 
         private Thread m_worldUpdateThread;
         private DateTime m_lastUpdateTime;
@@ -53,9 +53,7 @@ namespace Server
             PlayerContext p = new PlayerContext(sock, m_zoneManager);
 
             //NOTE: Code here will block the AcceptSocket loop, so make sure it stays lean
-            m_playersLock.EnterWriteLock();
-            m_players.Add(p.ID, p);
-            m_playersLock.ExitWriteLock();
+            m_players[p.ID] = p;
 
             p.SwitchZone(0);
 
@@ -73,27 +71,20 @@ namespace Server
                 Stopwatch updateTimer = Stopwatch.StartNew();
 
                 m_zoneManager.Update(dt);
-                m_playersLock.EnterReadLock();
 
-                Parallel.ForEach(m_players.Values, p =>
-                    {
-                        p.Update(dt);
-                        if (!p.IsConnected)
-                        {
-                            s_log.Info("{0} is disconnected and will be removed", p.Name);
-                            p.DisconnectCleanup();
-                            p.Dispose();
-                            lock (m_disposedPlayerList) m_disposedPlayerList.Add(p.ID);
-                        }
-                    });
-                m_playersLock.ExitReadLock();
-
-                m_playersLock.EnterWriteLock();
-                foreach (int i in m_disposedPlayerList)
+                Parallel.ForEach(m_players, kvp =>
                 {
-                    m_players.Remove(i);
-                }
-                m_playersLock.ExitWriteLock();
+                    PlayerContext player = kvp.Value;
+                    player.Update(dt);
+                    if (!player.IsConnected)
+                    {
+                        s_log.Info("{0} is disconnected and will be removed", player.Name);
+                        player.DisconnectCleanup();
+                        player.Dispose();
+                        PlayerContext removedPlayer = default(PlayerContext);
+                        m_players.TryRemove(kvp.Key, out removedPlayer);
+                    }
+                });
 
                 updateTimer.Stop();
 
@@ -113,20 +104,9 @@ namespace Server
 
         private void StatsThread()
         {
-            long lastMessagesSent = 0;
-            long lastMessagesReceived = 0;
-
             while (true)
             {
-                m_playersLock.EnterReadLock();
-                long sent = m_players.Values.Select(p => p.Stats.MessagesSent).Sum();
-                long received = m_players.Values.Select(p => p.Stats.MessagesReceived).Sum();
-
-                Console.Title = "Players: " + m_players.Count() + " - In/Sec: " + (received - lastMessagesReceived) + " - Out/Sec " + (sent - lastMessagesSent);
-                m_playersLock.ExitReadLock();
-
-                lastMessagesSent = sent;
-                lastMessagesReceived = received;
+                Console.Title = "Players: " + m_players.Count();
 
                 Thread.Sleep(1000);
             }
@@ -134,10 +114,8 @@ namespace Server
 
         public PlayerContext GetPlayerByID(int id)
         {
-            m_playersLock.EnterReadLock();
             PlayerContext pc = default(PlayerContext);
             m_players.TryGetValue(id, out pc);
-            m_playersLock.ExitReadLock();
             
             return pc;
         }

@@ -6,13 +6,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using Server.Utility;
 using Protocol;
+using System.Collections.Concurrent;
 
 namespace Server.Zones
 {
     public class Zone
     {
-        private Dictionary<int, PlayerContext> m_playersInZone = new Dictionary<int, PlayerContext>();
-        private ReaderWriterLockSlim m_playersLock = new ReaderWriterLockSlim();
+        private const float SEND_DISTANCE = 40 * 40;
+
+        private ConcurrentDictionary<int, PlayerContext> m_playersInZone = new ConcurrentDictionary<int, PlayerContext>(32, 2000);
 
         public int ID
         {
@@ -27,37 +29,34 @@ namespace Server.Zones
 
         public void AddPlayer(PlayerContext player)
         {
-            m_playersLock.EnterWriteLock();
-            m_playersInZone.Add(player.ID, player);
-            m_playersLock.ExitWriteLock();
+            m_playersInZone[player.ID] = player;
         }
 
-        public void RemovePlayer(PlayerContext player)
+        public bool RemovePlayer(PlayerContext player)
         {
-            m_playersLock.EnterWriteLock();
-            m_playersInZone.Remove(player.ID);
-            m_playersLock.ExitWriteLock();
+            PlayerContext removedPlayer = default(PlayerContext);
+            return m_playersInZone.TryRemove(player.ID, out removedPlayer);
         }
 
         public bool IsPlayerInZone(PlayerContext player)
         {
-            bool ret = false;
-            m_playersLock.EnterReadLock();
-            ret = m_playersInZone.ContainsKey(player.ID);
-            m_playersLock.ExitReadLock();
-            return ret;
+            return m_playersInZone.ContainsKey(player.ID);
         }
 
         public void Update(TimeSpan dt)
         {
-            m_playersLock.EnterReadLock();
-            Parallel.ForEach(m_playersInZone.Values, p1 =>
+            Parallel.ForEach(m_playersInZone, kvp1 =>
             {
-                foreach (PlayerContext p2 in m_playersInZone.Values)
+                PlayerContext p1 = kvp1.Value;
+                PlayerStateUpdate_S2C p1State = p1.PlayerState;
+                Vector2 p1Pos = new Vector2(p1State.X, p1State.Y);
+                foreach (var kvp2 in m_playersInZone)
                 {
-                    if (p1 != p2)
+                    PlayerContext p2 = kvp2.Value;
+                    PlayerStateUpdate_S2C p2State = p2.PlayerState;
+                    if (p1.ID != p2.ID)
                     {
-                        if (Vector2.Distance(new Vector2(p1.PlayerState.X, p1.PlayerState.Y), new Vector2(p2.PlayerState.X, p2.PlayerState.Y)) < 40)
+                        if (Vector2.DistanceSquared(p1Pos, new Vector2(p2State.X, p2State.Y)) < SEND_DISTANCE)
                         {
                             p1.IncludeInWorldState(p2);
                         }
@@ -65,17 +64,15 @@ namespace Server.Zones
                 }
             });
 
-            m_playersLock.ExitReadLock();
         }
 
         public void SendToAllInZone(Packet o)
         {
-            m_playersLock.EnterReadLock();
-            foreach (PlayerContext p in m_playersInZone.Values)
+            foreach (var kvp in m_playersInZone)
             {
+                PlayerContext p = kvp.Value;
                 p.Send(o);
             }
-            m_playersLock.ExitReadLock();
         }
     }
 }
