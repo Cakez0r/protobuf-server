@@ -14,7 +14,7 @@ namespace Server.Zones
     {
         private const float SEND_DISTANCE = 40 * 40;
 
-        private ConcurrentDictionary<int, PlayerContext> m_playersInZone = new ConcurrentDictionary<int, PlayerContext>(32, 2000);
+        private ConcurrentDictionary<int, PlayerContext> m_playersInZone = new ConcurrentDictionary<int, PlayerContext>();
 
         public int ID
         {
