@@ -3,6 +3,7 @@ using ProtoBuf;
 using Protocol;
 using Server.Utility;
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Net.Sockets;
 using System.ServiceModel.Channels;
@@ -24,6 +25,8 @@ namespace Server
 
         private long m_continueReadFrom = 0;
         private long m_lastReceiveBufferCapacity = 0;
+
+        private ConcurrentStack<byte[]> m_bufferPool = new ConcurrentStack<byte[]>();
 
         public bool Disposed
         {
@@ -78,7 +81,8 @@ namespace Server
                 {
                     if (m_socket.Connected)
                     {
-                        byte[] buffer = s_buffers.TakeBuffer(BUFFER_SIZE);
+                        byte[] buffer = GetBuffer();
+
                         long size = 0;
                         using (MemoryStream memoryStream = new MemoryStream(buffer))
                         {
@@ -110,14 +114,14 @@ namespace Server
 
         private void SendCompleted(object o, SocketAsyncEventArgs eventArgs)
         {
-            s_buffers.ReturnBuffer(eventArgs.Buffer);
+            ReturnBuffer(eventArgs.Buffer);
             eventArgs.Dispose();
         }
 
         private void StartReceiving()
         {
             SocketAsyncEventArgs eventArgs = new SocketAsyncEventArgs();
-            eventArgs.SetBuffer(s_buffers.TakeBuffer(BUFFER_SIZE), 0, BUFFER_SIZE);
+            eventArgs.SetBuffer(GetBuffer(), 0, BUFFER_SIZE);
             eventArgs.Completed += ReceiveCompleted;
             Receive(eventArgs);
         }
@@ -190,7 +194,7 @@ namespace Server
                                 else
                                 {
                                     s_log.Warn("Error deserializing! Disconnecting...");
-                                    s_buffers.ReturnBuffer(eventArgs.Buffer);
+                                    ReturnBuffer(eventArgs.Buffer);
                                     eventArgs.Dispose();
                                     Disconnect();
                                 }
@@ -239,7 +243,7 @@ namespace Server
                         s_log.Warn("Socket error on receive: " + eventArgs.SocketError);
                     }
 
-                    s_buffers.ReturnBuffer(eventArgs.Buffer);
+                    ReturnBuffer(eventArgs.Buffer);
                     eventArgs.Dispose();
                     Disconnect();
                 }
@@ -247,7 +251,7 @@ namespace Server
             catch (Exception ex)
             {
                 s_log.Warn("Exception on deserialize: " + ex);
-                s_buffers.ReturnBuffer(eventArgs.Buffer);
+                ReturnBuffer(eventArgs.Buffer);
                 eventArgs.Dispose();
                 Disconnect();
             }
@@ -256,7 +260,27 @@ namespace Server
         public void Dispose()
         {
             m_socket.Dispose();
+            byte[] buffer = default(byte[]);
+            while (m_bufferPool.TryPop(out buffer))
+            {
+                s_buffers.ReturnBuffer(buffer);
+            }
             Disposed = true;
+        }
+
+        private byte[] GetBuffer()
+        {
+            byte[] buffer = default(byte[]);
+            if (!m_bufferPool.TryPop(out buffer))
+            {
+                buffer = s_buffers.TakeBuffer(BUFFER_SIZE);
+            }
+            return buffer;
+        }
+
+        private void ReturnBuffer(byte[] buffer)
+        {
+            m_bufferPool.Push(buffer);
         }
 
         protected abstract void DispatchPacket(Packet packet);
