@@ -129,7 +129,7 @@ namespace Server
 
             if (!handled)
             {
-                s_log.Warn("Failed to handle packet of type {0}. Authenticated: {1} Name: {2} ID: {3}", packet.GetType(), IsAuthenticated, Name, ID);
+                s_log.Warn("[{3}] Failed to handle packet of type {0}. Authenticated: {1} Name: {2}", packet.GetType(), IsAuthenticated, Name, ID);
                 Disconnect();
             }
 
@@ -235,6 +235,8 @@ namespace Server
                 Name = m_account.Name;
                 result = AuthenticationAttempt_S2C.ResponseCode.OK;
                 s_log.Info("Player {0} authenticated as {1}.", ID, m_account.Name);
+
+                SwitchZone(0);
             }
             else
             {

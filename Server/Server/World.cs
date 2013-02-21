@@ -55,8 +55,6 @@ namespace Server
             //NOTE: Code here will block the AcceptSocket loop, so make sure it stays lean
             m_players[p.ID] = p;
 
-            p.SwitchZone(0);
-
             s_log.Info("Player {0} connected", p.PlayerState.PlayerID);
         }
 
@@ -78,7 +76,7 @@ namespace Server
                     player.Update(dt);
                     if (!player.IsConnected)
                     {
-                        s_log.Info("{0} is disconnected and will be removed", player.Name);
+                        new Task(() => s_log.Info("{0} is disconnected and will be removed", player.Name)).Start();
                         player.DisconnectCleanup();
                         player.Dispose();
                         PlayerContext removedPlayer = default(PlayerContext);

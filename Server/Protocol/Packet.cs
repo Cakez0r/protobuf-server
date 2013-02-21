@@ -3,7 +3,7 @@
 namespace Protocol
 {
     [ProtoContract]
-    public class Packet
+    public abstract class Packet
     {
         [ProtoMember(1)]
         public ushort ID { get; set; }

@@ -22,5 +22,10 @@ namespace Server.Utility
                 s_log.Warn("Failed to post work to a fiber. Work queue is full.");
             }
         }
+
+        public void Stop()
+        {
+            m_workQueue.Complete();
+        }
     }
 }
