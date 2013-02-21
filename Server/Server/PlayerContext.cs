@@ -18,13 +18,7 @@ namespace Server
     {
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
-        private static int s_nextID = 1;
 
-        public int ID
-        {
-            get;
-            private set;
-        }
 
         public PlayerStateUpdate_S2C PlayerState
         {
@@ -85,7 +79,6 @@ namespace Server
 
         public PlayerContext(Socket socket, ZoneManager zoneManager) : base(socket)
         {
-            ID = s_nextID++;
             Name = "Player " + ID;
 
             PlayerState = new PlayerStateUpdate_S2C();
@@ -136,7 +129,7 @@ namespace Server
 
             if (!handled)
             {
-                s_log.Warn("Failed to handle packet of type {0}. Authenticated: {1} Name: ", packet.GetType(), IsAuthenticated, Name);
+                s_log.Warn("Failed to handle packet of type {0}. Authenticated: {1} Name: {2} ID: {3}", packet.GetType(), IsAuthenticated, Name, ID);
                 Disconnect();
             }
 

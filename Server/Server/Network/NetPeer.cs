@@ -17,6 +17,8 @@ namespace Server
 
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
+        private static int s_nextID = 1;
+
         private static BufferManager s_buffers;
 
         private Fiber m_fiber = new Fiber();
@@ -27,6 +29,12 @@ namespace Server
         private long m_lastReceiveBufferCapacity = 0;
 
         private ConcurrentStack<byte[]> m_bufferPool = new ConcurrentStack<byte[]>();
+
+        public int ID
+        {
+            get;
+            private set;
+        }
 
         public bool Disposed
         {
@@ -46,6 +54,7 @@ namespace Server
 
         public NetPeer(Socket socket)
         {
+            ID = s_nextID++;
             m_receiveBuffer = new MemoryStream();
             m_socket = socket;
             StartReceiving();
@@ -60,7 +69,7 @@ namespace Server
         {
             if (m_socket.Connected)
             {
-                s_log.Debug("Disconnecting");
+                s_log.Debug("[{0}] Disconnecting", ID);
                 m_socket.Disconnect(false);
             }
         }
@@ -102,7 +111,7 @@ namespace Server
                 }
                 catch (Exception ex)
                 {
-                    s_log.Warn("Exception on Send: " + ex);
+                    s_log.Warn("[{0}] Exception on Send: " + ex, ID);
                     Disconnect();
                 }
             }
@@ -122,7 +131,7 @@ namespace Server
         {
             SocketAsyncEventArgs eventArgs = new SocketAsyncEventArgs();
             eventArgs.SetBuffer(GetBuffer(), 0, BUFFER_SIZE);
-            eventArgs.Completed += ReceiveCompleted;
+            eventArgs.Completed += ReceiveCompletedNew;
             Receive(eventArgs);
         }
 
@@ -142,6 +151,75 @@ namespace Server
             }
         }
 
+        long lastBufferSize;
+        private void ReceiveCompletedNew(object o, SocketAsyncEventArgs eventArgs)
+        {
+            bool disconnect = false;
+            try
+            {
+                if (eventArgs.SocketError == SocketError.Success)
+                {
+                    m_receiveBuffer.Write(eventArgs.Buffer, 0, eventArgs.BytesTransferred);
+
+                    m_receiveBuffer.Position = m_continueReadFrom;
+
+                    object obj = default(object);
+                    try
+                    {
+                        while (Serializer.NonGeneric.TryDeserializeWithLengthPrefix(m_receiveBuffer, PrefixStyle.Base128, ProtocolUtility.GetPacketType, out obj))
+                        {
+                            m_continueReadFrom = m_receiveBuffer.Position;
+
+                            Packet packet = (Packet)obj;
+                            m_fiber.Enqueue(() => DispatchPacket(packet));
+                        }
+                    }
+                    catch// (EndOfStreamException)
+                    {
+                    }
+
+                    if (m_continueReadFrom == m_receiveBuffer.Length)
+                    {
+                        m_continueReadFrom = 0;
+                        m_receiveBuffer.SetLength(0);
+                    }
+                    else
+                    {
+                        s_log.Trace("[{0}] Partial packet.", ID);
+                    }
+
+                    if (lastBufferSize != m_receiveBuffer.Length)
+                    {
+                        s_log.Trace("[{0}] Receive buffer size changed {1} -> {2}", ID, lastBufferSize, m_receiveBuffer.Length);
+                    }
+
+                    lastBufferSize = m_receiveBuffer.Length;
+
+                    Receive(eventArgs);
+                }
+                else
+                {
+                    s_log.Warn("[{0}] Socket error: " + eventArgs.SocketError.ToString(), ID);
+                    disconnect = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                s_log.Warn("[{0}] Exception on receive: " + ex, ID);
+                disconnect = true;
+            }
+            finally
+            {
+                if (disconnect)
+                {
+                    s_log.Warn("[{0}] Something went wrong in receive. Disconnecting.", ID);
+                    Disconnect();
+                    eventArgs.Dispose();
+                    ReturnBuffer(eventArgs.Buffer);
+                }
+            }
+        }
+
         private void ReceiveCompleted(object o, SocketAsyncEventArgs eventArgs)
         {
             try
@@ -152,7 +230,7 @@ namespace Server
                     m_receiveBuffer.Write(eventArgs.Buffer, 0, eventArgs.BytesTransferred);
 
                     //Rewind to where we should continue reading from, to attempt deserialization
-                    m_receiveBuffer.Seek(m_continueReadFrom, SeekOrigin.Begin);
+                    m_receiveBuffer.Position = m_continueReadFrom;
 
                     object obj = null;
                     int len = 0;
@@ -181,7 +259,7 @@ namespace Server
                             if (bufferLength - m_receiveBuffer.Position >= len)
                             {
                                 //Rewind back to the start of the packet
-                                m_receiveBuffer.Seek(m_continueReadFrom, SeekOrigin.Begin);
+                                m_receiveBuffer.Position = m_continueReadFrom;
                                 if (Serializer.NonGeneric.TryDeserializeWithLengthPrefix(m_receiveBuffer, PrefixStyle.Base128, ProtocolUtility.GetPacketType, out obj))
                                 {
                                     //Deserialize one packet
