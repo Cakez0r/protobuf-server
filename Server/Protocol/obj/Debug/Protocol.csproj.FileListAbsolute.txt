@@ -1,8 +1,0 @@
-Z:\protobuf-server\protobuf-server\Server\Protocol\obj\Debug\Protocol.csprojResolveAssemblyReference.cache
-Z:\protobuf-server\protobuf-server\Server\Protocol\bin\Debug\Protocol.dll
-Z:\protobuf-server\protobuf-server\Server\Protocol\bin\Debug\Protocol.pdb
-Z:\protobuf-server\protobuf-server\Server\Protocol\bin\Debug\protobuf-net.dll
-Z:\protobuf-server\protobuf-server\Server\Protocol\bin\Debug\protobuf-net.pdb
-Z:\protobuf-server\protobuf-server\Server\Protocol\bin\Debug\protobuf-net.xml
-Z:\protobuf-server\protobuf-server\Server\Protocol\obj\Debug\Protocol.dll
-Z:\protobuf-server\protobuf-server\Server\Protocol\obj\Debug\Protocol.pdb
