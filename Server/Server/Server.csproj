@@ -42,6 +42,9 @@
     <Reference Include="NLog">
       <HintPath>..\packages\NLog.2.0.0.2000\lib\net40\NLog.dll</HintPath>
     </Reference>
+    <Reference Include="protobuf-net">
+      <HintPath>..\packages\protobuf-net.2.0.0.640\lib\net40\protobuf-net.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.ServiceModel" />
@@ -87,10 +90,6 @@
     <ProjectReference Include="..\Protocol\Protocol.csproj">
       <Project>{44474245-01a9-4d44-b3f3-84715aa23fe7}</Project>
       <Name>Protocol</Name>
-    </ProjectReference>
-    <ProjectReference Include="Z:\protobuf\protobuf-net\protobuf-net.csproj">
-      <Project>{8374e4d7-2a91-48f1-9360-09b09cf27c3f}</Project>
-      <Name>protobuf-net</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />

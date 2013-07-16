@@ -1,0 +1,14 @@
+Z:\protobuf-server\protobuf-server\Server\Data\bin\Debug\Data.dll
+Z:\protobuf-server\protobuf-server\Server\Data\bin\Debug\Data.pdb
+Z:\protobuf-server\protobuf-server\Server\Data\bin\Debug\Dapper.dll
+Z:\protobuf-server\protobuf-server\Server\Data\bin\Debug\Dapper.pdb
+Z:\protobuf-server\protobuf-server\Server\Data\bin\Debug\Dapper.xml
+Z:\protobuf-server\protobuf-server\Server\Data\obj\Debug\Data.csprojResolveAssemblyReference.cache
+Z:\protobuf-server\protobuf-server\Server\Data\obj\Debug\Data.dll
+Z:\protobuf-server\protobuf-server\Server\Data\obj\Debug\Data.pdb
+Z:\protobuf-server\protobuf-server\Server\Data\bin\Debug\Mono.Security.dll
+Z:\protobuf-server\protobuf-server\Server\Data\bin\Debug\Npgsql.dll
+Z:\protobuf-server\protobuf-server\Server\Data\bin\Debug\policy.2.0.Npgsql.dll
+Z:\protobuf-server\protobuf-server\Server\Data\bin\Debug\Npgsql.pdb
+Z:\protobuf-server\protobuf-server\Server\Data\bin\Debug\Npgsql.xml
+Z:\protobuf-server\protobuf-server\Server\Data\bin\Debug\policy.2.0.Npgsql.config

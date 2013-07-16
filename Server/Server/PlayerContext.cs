@@ -9,8 +9,6 @@ using Protocol;
 using Server.Utility;
 using Server.Zones;
 using System.Threading;
-using Data;
-using Data.Models;
 
 namespace Server
 {
@@ -18,23 +16,22 @@ namespace Server
     {
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
-
-
         public PlayerStateUpdate_S2C PlayerState
         {
             get;
             private set;
         }
 
-        public bool IsAuthenticated
-        {
-            get { return m_account != null; }
-        }
-
         public string Name
         {
             get;
             private set; 
+        }
+
+        public bool IsAuthenticated
+        {
+            get;
+            private set;
         }
 
         private ReaderWriterLockSlim m_introductionLock = new ReaderWriterLockSlim();
@@ -70,12 +67,8 @@ namespace Server
         private ObjectRouter m_unauthenticatedHandler = new ObjectRouter();
         private ObjectRouter m_authenticatedHandler = new ObjectRouter();
 
-        private AccountModel m_account;
-
         private int m_lastActivity = Environment.TickCount;
         private const int PING_TIMEOUT = 5000;
-
-        private static AccountRepository s_accountRepository = new AccountRepository();
 
         public PlayerContext(Socket socket, ZoneManager zoneManager) : base(socket)
         {
@@ -227,24 +220,7 @@ namespace Server
 
         private void Handle_AuthenticationAttempt(AuthenticationAttempt_C2S aa)
         {
-            m_account = s_accountRepository.GetWithLogin(aa.Username, aa.Password);
 
-            AuthenticationAttempt_S2C.ResponseCode result;
-            if (m_account != null)
-            {
-                Name = m_account.Name;
-                result = AuthenticationAttempt_S2C.ResponseCode.OK;
-                s_log.Info("Player {0} authenticated as {1}.", ID, m_account.Name);
-
-                SwitchZone(0);
-            }
-            else
-            {
-                result = AuthenticationAttempt_S2C.ResponseCode.BadLogin;
-                s_log.Info("Player {0} failed to authenticate. Username: {1} Password: {2}", ID, aa.Username, aa.Password);
-            }
-
-            Respond(aa, new AuthenticationAttempt_S2C() { Result = result, PlayerID = ID });
         }
 
         private void Handle_TimeSync(TimeSync_C2S sync)

@@ -25,7 +25,6 @@ namespace Server
         private Socket m_socket;
 
         private long m_continueReadFrom = 0;
-        private long m_lastReceiveBufferCapacity = 0;
         private long m_lastBufferSize;
 
         private ConcurrentStack<byte[]> m_bufferPool = new ConcurrentStack<byte[]>();
