@@ -1,0 +1,8 @@
+CREATE TABLE ItemInstance
+(
+    ItemInstanceID BIGSERIAL CONSTRAINT PK_ItemInstance PRIMARY KEY,
+    ItemID INTEGER NOT NULL CONSTRAINT FK_ItemInstance_Item REFERENCES Item,
+    Durability REAL NOT NULL,
+    DateCreated TIMESTAMP NOT NULL,
+    Flags INTEGER NOT NULL
+);

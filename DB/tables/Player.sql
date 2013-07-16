@@ -1,0 +1,14 @@
+CREATE TABLE Player
+(
+    PlayerID SERIAL CONSTRAINT PK_Player PRIMARY KEY,
+    AccountID INTEGER NOT NULL CONSTRAINT FK_Player_Account REFERENCES Account,
+    Name TEXT NOT NULL,
+    Health REAL NOT NULL,
+    Power REAL NOT NULL,
+    Money BIGINT NOT NULL,
+    Map INTEGER NOT NULL,
+    Position POINT NOT NULL,
+    Rotation REAL NOT NULL
+);
+
+CREATE UNIQUE INDEX UQ_Player_Name ON Player (LOWER(Name));

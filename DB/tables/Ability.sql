@@ -1,0 +1,5 @@
+CREATE TABLE Ability
+(
+    AbilityID SERIAL CONSTRAINT PK_Ability PRIMARY KEY,
+    FriendlyName TEXT NOT NULL
+);
