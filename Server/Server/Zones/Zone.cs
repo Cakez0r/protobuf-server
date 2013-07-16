@@ -14,7 +14,7 @@ namespace Server.Zones
     {
         private const float SEND_DISTANCE = 40 * 40;
 
-        private ConcurrentDictionary<int, PlayerContext> m_playersInZone = new ConcurrentDictionary<int, PlayerContext>();
+        private ConcurrentDictionary<int, PlayerPeer> m_playersInZone = new ConcurrentDictionary<int, PlayerPeer>();
 
         public int ID
         {
@@ -27,18 +27,18 @@ namespace Server.Zones
             ID = zoneID;
         }
 
-        public void AddPlayer(PlayerContext player)
+        public void AddPlayer(PlayerPeer player)
         {
             m_playersInZone[player.ID] = player;
         }
 
-        public bool RemovePlayer(PlayerContext player)
+        public bool RemovePlayer(PlayerPeer player)
         {
-            PlayerContext removedPlayer = default(PlayerContext);
+            PlayerPeer removedPlayer = default(PlayerPeer);
             return m_playersInZone.TryRemove(player.ID, out removedPlayer);
         }
 
-        public bool IsPlayerInZone(PlayerContext player)
+        public bool IsPlayerInZone(PlayerPeer player)
         {
             return m_playersInZone.ContainsKey(player.ID);
         }
@@ -47,12 +47,12 @@ namespace Server.Zones
         {
             Parallel.ForEach(m_playersInZone, kvp1 =>
             {
-                PlayerContext p1 = kvp1.Value;
+                PlayerPeer p1 = kvp1.Value;
                 PlayerStateUpdate_S2C p1State = p1.PlayerState;
                 Vector2 p1Pos = new Vector2(p1State.X, p1State.Y);
                 foreach (var kvp2 in m_playersInZone)
                 {
-                    PlayerContext p2 = kvp2.Value;
+                    PlayerPeer p2 = kvp2.Value;
                     PlayerStateUpdate_S2C p2State = p2.PlayerState;
                     if (p1.ID != p2.ID)
                     {
@@ -70,7 +70,7 @@ namespace Server.Zones
         {
             foreach (var kvp in m_playersInZone)
             {
-                PlayerContext p = kvp.Value;
+                PlayerPeer p = kvp.Value;
                 p.Send(o);
             }
         }

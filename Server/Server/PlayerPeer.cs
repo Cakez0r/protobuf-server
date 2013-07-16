@@ -12,7 +12,7 @@ using System.Threading;
 
 namespace Server
 {
-    public class PlayerContext : NetPeer
+    public class PlayerPeer : NetPeer
     {
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
@@ -70,7 +70,7 @@ namespace Server
         private int m_lastActivity = Environment.TickCount;
         private const int PING_TIMEOUT = 5000;
 
-        public PlayerContext(Socket socket, ZoneManager zoneManager) : base(socket)
+        public PlayerPeer(Socket socket, ZoneManager zoneManager) : base(socket)
         {
             Name = "Player " + ID;
 
@@ -129,7 +129,7 @@ namespace Server
             m_lastActivity = Environment.TickCount;
         }
 
-        public void IncludeInWorldState(PlayerContext player)
+        public void IncludeInWorldState(PlayerPeer player)
         {
             PlayerStateUpdate_S2C psu = player.HasBeenIntroducedTo(ID) ? player.PlayerState :
                 new PlayerStateUpdate_S2C()

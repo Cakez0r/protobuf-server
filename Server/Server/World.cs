@@ -18,7 +18,7 @@ namespace Server
 
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
-        private ConcurrentDictionary<int, PlayerContext> m_players = new ConcurrentDictionary<int, PlayerContext>();
+        private ConcurrentDictionary<int, PlayerPeer> m_players = new ConcurrentDictionary<int, PlayerPeer>();
 
         private Thread m_worldUpdateThread;
         private DateTime m_lastUpdateTime;
@@ -50,7 +50,7 @@ namespace Server
         {
             sock.NoDelay = true;
 
-            PlayerContext p = new PlayerContext(sock, m_zoneManager);
+            PlayerPeer p = new PlayerPeer(sock, m_zoneManager);
 
             //NOTE: Code here will block the AcceptSocket loop, so make sure it stays lean
             m_players[p.ID] = p;
@@ -72,14 +72,14 @@ namespace Server
 
                 Parallel.ForEach(m_players, kvp =>
                 {
-                    PlayerContext player = kvp.Value;
+                    PlayerPeer player = kvp.Value;
                     player.Update(dt);
                     if (!player.IsConnected)
                     {
                         new Task(() => s_log.Info("{0} is disconnected and will be removed", player.Name)).Start();
                         player.DisconnectCleanup();
                         player.Dispose();
-                        PlayerContext removedPlayer = default(PlayerContext);
+                        PlayerPeer removedPlayer = default(PlayerPeer);
                         m_players.TryRemove(kvp.Key, out removedPlayer);
                     }
                 });
@@ -110,9 +110,9 @@ namespace Server
             }
         }
 
-        public PlayerContext GetPlayerByID(int id)
+        public PlayerPeer GetPlayerByID(int id)
         {
-            PlayerContext pc = default(PlayerContext);
+            PlayerPeer pc = default(PlayerPeer);
             m_players.TryGetValue(id, out pc);
             
             return pc;
