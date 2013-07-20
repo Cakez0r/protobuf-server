@@ -66,12 +66,12 @@ namespace Server
 
         public void Disconnect()
         {
-            m_fiber.Stop();
             if (!Disposed && m_socket.Connected)
             {
                 s_log.Debug("[{0}] Disconnecting", ID);
                 m_socket.Disconnect(false);
             }
+            m_fiber.Stop();
         }
 
         public void Respond(Packet p, Packet response)

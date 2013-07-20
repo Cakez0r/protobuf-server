@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION GET_AccountByAccountUsername(_username TEXT)
+﻿CREATE OR REPLACE FUNCTION GET_AccountByUsername(_username TEXT)
 RETURNS Account
 AS $$
     SELECT
@@ -11,5 +11,5 @@ AS $$
     FROM
         Account
     WHERE
-        Username = _username
+        LOWER(Username) = LOWER(_username)
 $$ LANGUAGE SQL;

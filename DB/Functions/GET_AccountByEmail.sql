@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION GET_AccountByAccountEmail(_email TEXT)
+﻿CREATE OR REPLACE FUNCTION GET_AccountByEmail(_email TEXT)
 RETURNS Account
 AS $$
     SELECT
@@ -11,5 +11,5 @@ AS $$
     FROM
         Account
     WHERE
-        Email = _email
+        LOWER(Email) = LOWER(_email)
 $$ LANGUAGE SQL;

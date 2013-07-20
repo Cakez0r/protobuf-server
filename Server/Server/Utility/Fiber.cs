@@ -1,6 +1,6 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Threading.Tasks.Dataflow;
-using NLog;
 
 namespace Server.Utility
 {

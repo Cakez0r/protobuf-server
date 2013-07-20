@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION GET_AccountByAccountUsernameAndPasswordHash(_username TEXT, _passwordHash TEXT)
+﻿CREATE OR REPLACE FUNCTION GET_AccountByUsernameAndPasswordHash(_username TEXT, _passwordHash TEXT)
 RETURNS Account
 AS $$
     SELECT
@@ -11,6 +11,6 @@ AS $$
     FROM
         Account
     WHERE
-        Username = _username AND
+        LOWER(Username) = LOWER(_username) AND
         PasswordHash = _passwordHash
 $$ LANGUAGE SQL;

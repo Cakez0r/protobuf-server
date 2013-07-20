@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Data.Accounts;
+using NLog;
+using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Linq;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using NLog;
-using Server.Utility;
-using Server.Zones;
-using System.Net.Sockets;
-using System.Collections.Concurrent;
 
 namespace Server
 {
@@ -23,67 +20,53 @@ namespace Server
         private Thread m_worldUpdateThread;
         private DateTime m_lastUpdateTime;
 
-        private ZoneManager m_zoneManager = new ZoneManager();
+        private IAccountRepository m_accountRepository;
 
-        private Random m_rng = new Random((int)DateTime.Now.Ticks);
-
-        private List<int> m_disposedPlayerList = new List<int>();
-
-        public int Clock
+        public World(IAccountRepository accountRepository)
         {
-            get { return Environment.TickCount; }
-        }
+            m_accountRepository = accountRepository;
 
-        static World()
-        {
-        }
-
-        public World()
-        {
             m_worldUpdateThread = new Thread(WorldUpdate);
             m_worldUpdateThread.Start();
-
-            new Thread(StatsThread).Start();
         }
 
         public void AcceptSocket(Socket sock)
         {
             sock.NoDelay = true;
 
-            PlayerPeer p = new PlayerPeer(sock, m_zoneManager);
+            PlayerPeer p = new PlayerPeer(sock, m_accountRepository);
 
             //NOTE: Code here will block the AcceptSocket loop, so make sure it stays lean
             m_players[p.ID] = p;
 
-            s_log.Info("Player {0} connected", p.PlayerState.PlayerID);
+            s_log.Info("[{0}] connected", p.ID);
         }
 
         private void WorldUpdate()
         {
-            m_lastUpdateTime = DateTime.Now;
+            s_log.Info("World update thread started"); 
 
+            m_lastUpdateTime = DateTime.Now;
+            Stopwatch updateTimer = new Stopwatch();
             while (true)
             {
-                TimeSpan dt = DateTime.Now - m_lastUpdateTime;
-
-                Stopwatch updateTimer = Stopwatch.StartNew();
-
-                m_zoneManager.Update(dt);
-
+                updateTimer.Restart();
                 Parallel.ForEach(m_players, kvp =>
                 {
                     PlayerPeer player = kvp.Value;
-                    player.Update(dt);
-                    if (!player.IsConnected)
+                    if (player.IsConnected)
                     {
-                        new Task(() => s_log.Info("{0} is disconnected and will be removed", player.Name)).Start();
-                        player.DisconnectCleanup();
+                        //This schedules an update on the player's fiber - does not run synchronously
+                        player.Update();
+                    }
+                    else
+                    {
+                        s_log.Info("[{0}] is disconnected and will be removed", player.ID);
                         player.Dispose();
                         PlayerPeer removedPlayer = default(PlayerPeer);
                         m_players.TryRemove(kvp.Key, out removedPlayer);
                     }
                 });
-
                 updateTimer.Stop();
 
                 int restTime = TARGET_UPDATE_TIME_MS - (int)updateTimer.ElapsedMilliseconds;
@@ -98,24 +81,6 @@ namespace Server
 
                 Thread.Sleep(restTime);
             }
-        }
-
-        private void StatsThread()
-        {
-            while (true)
-            {
-                Console.Title = "Players: " + m_players.Count();
-
-                Thread.Sleep(1000);
-            }
-        }
-
-        public PlayerPeer GetPlayerByID(int id)
-        {
-            PlayerPeer pc = default(PlayerPeer);
-            m_players.TryGetValue(id, out pc);
-            
-            return pc;
         }
     }
 }
