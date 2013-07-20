@@ -1,7 +1,9 @@
 ﻿using Data.Accounts;
 using NLog;
+using Server.Zones;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
@@ -21,10 +23,12 @@ namespace Server
         private DateTime m_lastUpdateTime;
 
         private IAccountRepository m_accountRepository;
+        private ZoneRepository m_zoneRepository;
 
-        public World(IAccountRepository accountRepository)
+        public World(IAccountRepository accountRepository, ZoneRepository zoneRepository)
         {
             m_accountRepository = accountRepository;
+            m_zoneRepository = zoneRepository;
 
             m_worldUpdateThread = new Thread(WorldUpdate);
             m_worldUpdateThread.Start();
@@ -34,7 +38,7 @@ namespace Server
         {
             sock.NoDelay = true;
 
-            PlayerPeer p = new PlayerPeer(sock, m_accountRepository);
+            PlayerPeer p = new PlayerPeer(sock, m_accountRepository, m_zoneRepository);
 
             //NOTE: Code here will block the AcceptSocket loop, so make sure it stays lean
             m_players[p.ID] = p;

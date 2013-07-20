@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Server.Utility
 {
@@ -18,7 +14,7 @@ namespace Server.Utility
             m_fiber = fiber;
         }
 
-        public Future<ReturnType> Access<ReturnType>(Func<ObjectType, ReturnType> accessor)
+        public Future<ReturnType> Transaction<ReturnType>(Func<ObjectType, ReturnType> accessor)
         {
             Future<ReturnType> future = new Future<ReturnType>();
 
@@ -46,7 +42,7 @@ namespace Server.Utility
             return future;
         }
 
-        public void Access(Action<ObjectType> accessor)
+        public void Transaction(Action<ObjectType> accessor)
         {
             if (Monitor.TryEnter(m_object))
             {

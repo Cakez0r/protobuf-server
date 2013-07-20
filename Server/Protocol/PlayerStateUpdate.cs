@@ -43,24 +43,21 @@ namespace Protocol
         public int PlayerID { get; set; }
 
         [ProtoMember(5)]
-        public PlayerIntroduction Introduction { get; set; }
-
-        [ProtoMember(6)]
         public int? TargetID { get; set; }
 
-        [ProtoMember(7)]
+        [ProtoMember(6)]
         public int CurrentHP { get; set; }
 
-        [ProtoMember(8)]
+        [ProtoMember(7)]
         public int MaxHP { get; set; }
 
-        [ProtoMember(9)]
+        [ProtoMember(8)]
         public int Time { get; set; }
 
-        [ProtoMember(10)]
+        [ProtoMember(9)]
         public float VelX { get; set; }
 
-        [ProtoMember(11)]
+        [ProtoMember(10)]
         public float VelY { get; set; }
     }
 }

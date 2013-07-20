@@ -10,18 +10,20 @@ namespace Server
     {
         private IAccountRepository m_accountRepository;
 
-
         private void Handle_AuthenticationAttempt(AuthenticationAttempt_C2S aa)
         {
             string hashedPassword = HashPassword(aa.Username, aa.Password);
             AccountModel account = m_accountRepository.GetAccountByUsernameAndPasswordHash(aa.Username, hashedPassword);
-            IsAuthenticated = account != null;
 
             AuthenticationAttempt_S2C.ResponseCode result;
-            if (IsAuthenticated)
+            if (account != null)
             {
+                Introduction = new PlayerIntroduction() { PlayerID = ID, Name = "[" + ID.ToString() + "]" + account.Username };
                 s_log.Info("[{0}] Authenticated as {1}", ID, account.Username);
                 result = AuthenticationAttempt_S2C.ResponseCode.OK;
+                IsAuthenticated = true;
+
+                ChangeZone(0);
             }
             else
             {

@@ -2,9 +2,9 @@
 using NLog;
 using Protocol;
 using Server.Utility;
+using Server.Zones;
 using System;
 using System.Net.Sockets;
-using System.Threading;
 
 namespace Server
 {
@@ -18,7 +18,8 @@ namespace Server
         private int m_lastActivity = Environment.TickCount;
         private const int PING_TIMEOUT = 5000;
 
-        private ThreadSafeWrapper<PlayerState> m_state;
+        private PlayerState m_playerState = new PlayerState();
+        private ThreadSafeWrapper<PlayerState> m_playerStateAccessor;
 
         public bool IsAuthenticated
         {
@@ -26,10 +27,11 @@ namespace Server
             private set;
         }
 
-        public PlayerPeer(Socket socket, IAccountRepository accountRepository) : base(socket)
+        public PlayerPeer(Socket socket, IAccountRepository accountRepository, ZoneRepository zoneRepository) : base(socket)
         {
-            m_state = new ThreadSafeWrapper<PlayerState>(new PlayerState(), Fiber);
+            m_playerStateAccessor = new ThreadSafeWrapper<PlayerState>(m_playerState, Fiber);
             m_accountRepository = accountRepository;
+            m_zoneRepository = zoneRepository;
 
             InitialiseRoutes();
         }
@@ -50,6 +52,25 @@ namespace Server
 
         private void InternalUpdate()
         {
+            LatestStateUpdate = new PlayerStateUpdate_S2C()
+            {
+                PlayerID = ID,
+                CurrentHP = 0,
+                MaxHP = 0,
+                Rot = m_playerState.Rotation,
+                TargetID = m_playerState.TargetID,
+                Time = m_playerState.TimeOnClient,
+                VelX = m_playerState.Velocity.X,
+                VelY = m_playerState.Velocity.Y,
+                X = m_playerState.Position.X,
+                Y = m_playerState.Position.Y
+            };
+
+            if (IsAuthenticated && m_playerState.CurrentZone != null)
+            {
+                BuildAndSendWorldStateUpdate();
+            }
+
             if (Environment.TickCount - m_lastActivity > PING_TIMEOUT)
             {
                 Send(new Ping());
@@ -70,6 +91,13 @@ namespace Server
             }
 
             m_lastActivity = Environment.TickCount;
+        }
+
+        public override void Dispose()
+        {
+            m_playerState.CurrentZone.RemoveFromZone(this);
+
+            base.Dispose();
         }
 
         private void Handle_TimeSync(TimeSync_C2S sync)

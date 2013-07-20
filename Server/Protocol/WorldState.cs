@@ -11,5 +11,8 @@ namespace Protocol
 
         [ProtoMember(2)]
         public int CurrentServerTime { get; set; }
+
+        [ProtoMember(3)]
+        public List<PlayerIntroduction> PlayerIntroductions { get; set; }
     }
 }

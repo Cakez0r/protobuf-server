@@ -50,9 +50,6 @@
     <Reference Include="NLog">
       <HintPath>..\packages\NLog.2.0.0.2000\lib\net40\NLog.dll</HintPath>
     </Reference>
-    <Reference Include="protobuf-net">
-      <HintPath>..\packages\protobuf-net.2.0.0.640\lib\net40\protobuf-net.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
@@ -83,6 +80,8 @@
     <Compile Include="Utility\ThreadSafeWrapper.cs" />
     <Compile Include="Utility\Vector2.cs" />
     <Compile Include="World.cs" />
+    <Compile Include="Zones\Zone.cs" />
+    <Compile Include="Zones\ZoneRepository.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -99,6 +98,10 @@
     <ProjectReference Include="..\Data\Data.csproj">
       <Project>{0273366a-694f-4764-9805-0e08d2c36c0e}</Project>
       <Name>Data</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\protobuf-net\protobuf-net.csproj">
+      <Project>{8374e4d7-2a91-48f1-9360-09b09cf27c3f}</Project>
+      <Name>protobuf-net</Name>
     </ProjectReference>
     <ProjectReference Include="..\Protocol\Protocol.csproj">
       <Project>{44474245-01a9-4d44-b3f3-84715aa23fe7}</Project>

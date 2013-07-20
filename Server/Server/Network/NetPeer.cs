@@ -223,7 +223,7 @@ namespace Server
             }
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             m_fiber.Stop();
             m_socket.Dispose();

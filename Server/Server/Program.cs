@@ -3,6 +3,7 @@ using Microsoft.Practices.Unity;
 using Microsoft.Practices.Unity.Configuration;
 using NLog;
 using Protocol;
+using Server.Zones;
 using System.Configuration;
 using System.Net;
 using System.Net.Sockets;
@@ -22,11 +23,12 @@ namespace Server
             repositoryResolver.LoadConfiguration();
 
             IAccountRepository accountRepository = repositoryResolver.Resolve<IAccountRepository>();
+            ZoneRepository zoneRepository = new ZoneRepository();
             s_log.Info("... done");
 
 
             s_log.Info("Creating world...");
-            World world = new World(accountRepository);
+            World world = new World(accountRepository, zoneRepository);
             s_log.Info("... done");
 
 
