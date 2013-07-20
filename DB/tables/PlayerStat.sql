@@ -1,6 +1,7 @@
-CREATE TABLE PlayerStat
+﻿CREATE TABLE PlayerStat
 (
     PlayerStatID SERIAL CONSTRAINT PK_PlayerStat PRIMARY KEY,
+    PlayerID INTEGER NOT NULL CONSTRAINT FK_PlayerStat_Player REFERENCES Player,
     StatID INTEGER NOT NULL CONSTRAINT FK_PlayerStat_Stat REFERENCES Stat,
     StatValue REAL NOT NULL
 );
