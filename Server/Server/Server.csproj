@@ -80,6 +80,7 @@
     <Compile Include="Utility\Future.cs" />
     <Compile Include="Utility\MathHelper.cs" />
     <Compile Include="Utility\ObjectRouter.cs" />
+    <Compile Include="Utility\ThreadSafeWrapper.cs" />
     <Compile Include="Utility\Vector2.cs" />
     <Compile Include="World.cs" />
   </ItemGroup>

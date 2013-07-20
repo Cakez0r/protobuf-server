@@ -46,6 +46,11 @@ namespace Server
             get { return m_socket.Connected; }
         }
 
+        protected Fiber Fiber
+        {
+            get { return m_fiber; }
+        }
+
         static NetPeer()
         {
             s_buffers = BufferManager.CreateBufferManager(1024 * 1024 * 1024 * 2L, BUFFER_SIZE);
@@ -57,11 +62,6 @@ namespace Server
             m_receiveBuffer = new MemoryStream();
             m_socket = socket;
             StartReceiving();
-        }
-
-        public void EnqueueWork(Action a)
-        {
-            m_fiber.Enqueue(a);
         }
 
         public void Disconnect()

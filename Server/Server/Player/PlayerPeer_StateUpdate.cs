@@ -12,7 +12,7 @@ namespace Server
     {
         public void Handle_PlayerStateUpdate(PlayerStateUpdate_C2S psu)
         {
-            SafeAccessState((s) =>
+            m_state.Access((s) =>
             {
                 s.Rotation = psu.Rot;
                 s.Position = new Vector2(psu.X, psu.Y);

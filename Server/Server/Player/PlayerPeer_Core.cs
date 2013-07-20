@@ -18,7 +18,7 @@ namespace Server
         private int m_lastActivity = Environment.TickCount;
         private const int PING_TIMEOUT = 5000;
 
-        private PlayerState m_state = new PlayerState();
+        private ThreadSafeWrapper<PlayerState> m_state;
 
         public bool IsAuthenticated
         {
@@ -28,6 +28,7 @@ namespace Server
 
         public PlayerPeer(Socket socket, IAccountRepository accountRepository) : base(socket)
         {
+            m_state = new ThreadSafeWrapper<PlayerState>(new PlayerState(), Fiber);
             m_accountRepository = accountRepository;
 
             InitialiseRoutes();
@@ -44,54 +45,7 @@ namespace Server
 
         public void Update()
         {
-            EnqueueWork(InternalUpdate);
-        }
-
-        private Future<T> SafeAccessState<T>(Func<PlayerState, T> accessor)
-        {
-            Future<T> future = new Future<T>();
-
-            T synchronousResult = default(T);
-            if (Monitor.TryEnter(m_state))
-            {
-                synchronousResult = accessor(m_state);
-                Monitor.Exit(m_state);
-
-                future.SetResult(synchronousResult);
-            }
-            else
-            {
-                EnqueueWork(() =>
-                {
-                    T result = default(T);
-                    lock (m_state)
-                    {
-                        result = accessor(m_state);
-                    }
-                    future.SetResult(result);
-                });
-            }
-
-            return future;
-        }
-
-        private void SafeAccessState(Action<PlayerState> accessor)
-        {
-            if (Monitor.TryEnter(m_state))
-            {
-                accessor(m_state);
-                Monitor.Exit(m_state);
-            }
-            else
-            {
-                EnqueueWork(() =>
-                {
-                    lock (m_state)
-                    {
-                        accessor(m_state);
-                    }
-                });
-            }
+            Fiber.Enqueue(InternalUpdate);
         }
 
         private void InternalUpdate()
