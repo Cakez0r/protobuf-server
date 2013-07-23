@@ -28,7 +28,7 @@ namespace Server
             else
             {
                 result = AuthenticationAttempt_S2C.ResponseCode.BadLogin;
-                s_log.Info("[{0}] Login failed with username: {1} and password: {2}", aa.Username, aa.Password);
+                s_log.Info("[{0}] Login failed with username: {1} and password: {2}", ID, aa.Username, aa.Password);
             }
 
             Respond(aa, new AuthenticationAttempt_S2C() { PlayerID = ID, Result = result });

@@ -1,5 +1,5 @@
 ﻿CREATE OR REPLACE FUNCTION GET_AccountByUsernameAndPasswordHash(_username TEXT, _passwordHash TEXT)
-RETURNS Account
+RETURNS SETOF Account
 AS $$
     SELECT
         AccountID,

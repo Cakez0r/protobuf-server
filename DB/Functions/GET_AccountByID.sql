@@ -1,5 +1,5 @@
 ﻿CREATE OR REPLACE FUNCTION GET_AccountByID(_accountID INTEGER)
-RETURNS Account
+RETURNS SETOF Account
 AS $$
     SELECT
         AccountID,

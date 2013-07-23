@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION GET_PlayerByID(_playerID INTEGER)
-RETURNS Player
+RETURNS SETOF Player
 AS $$
     SELECT
         PlayerID,

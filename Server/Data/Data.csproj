@@ -58,6 +58,10 @@
     <Compile Include="Accounts\AccountModel.cs" />
     <Compile Include="Accounts\IAccountRepository.cs" />
     <Compile Include="Accounts\PostgresAccountRepository.cs" />
+    <Compile Include="Players\IPlayerRepository.cs" />
+    <Compile Include="Players\PlayerModel.cs" />
+    <Compile Include="Players\PlayerStatModel.cs" />
+    <Compile Include="Players\PostgresPlayerRepository.cs" />
     <Compile Include="PostgresRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

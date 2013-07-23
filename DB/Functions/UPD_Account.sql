@@ -1,5 +1,5 @@
 ﻿CREATE OR REPLACE FUNCTION UPD_Account(_accountID INTEGER, _passwordHash TEXT, _email TEXT, _lastLoginDate TIMESTAMP) 
-RETURNS Account 
+RETURNS SETOF Account 
 AS $$
     UPDATE
         Account
