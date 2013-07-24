@@ -58,6 +58,10 @@
     <Compile Include="Accounts\AccountModel.cs" />
     <Compile Include="Accounts\IAccountRepository.cs" />
     <Compile Include="Accounts\PostgresAccountRepository.cs" />
+    <Compile Include="NPCs\INPCRepository.cs" />
+    <Compile Include="NPCs\NPCModel.cs" />
+    <Compile Include="NPCs\NPCSpawnModel.cs" />
+    <Compile Include="NPCs\PostgresNPCRepository.cs" />
     <Compile Include="Players\IPlayerRepository.cs" />
     <Compile Include="Players\PlayerModel.cs" />
     <Compile Include="Players\PlayerStatModel.cs" />
