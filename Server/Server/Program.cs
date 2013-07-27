@@ -1,4 +1,6 @@
 ﻿using Data.Accounts;
+using Data.NPCs;
+using Data.Players;
 using Microsoft.Practices.Unity;
 using Microsoft.Practices.Unity.Configuration;
 using NLog;
@@ -23,14 +25,17 @@ namespace Server
             repositoryResolver.LoadConfiguration();
 
             IAccountRepository accountRepository = repositoryResolver.Resolve<IAccountRepository>();
-            ZoneRepository zoneRepository = new ZoneRepository();
-            s_log.Info("... done");
+            INPCRepository npcRepository = repositoryResolver.Resolve<INPCRepository>();
+            IPlayerRepository playerRepository = repositoryResolver.Resolve<IPlayerRepository>();
 
+            s_log.Info("Precaching NPCs...");
+            npcRepository.GetNPCs();
+
+            s_log.Info("Precaching NPC Spawns...");
+            npcRepository.GetNPCSpawns();
 
             s_log.Info("Creating world...");
-            World world = new World(accountRepository, zoneRepository);
-            s_log.Info("... done");
-
+            World world = new World(accountRepository, npcRepository, playerRepository);
 
             ProtocolUtility.InitialiseSerializer();
 

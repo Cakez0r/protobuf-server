@@ -10,7 +10,7 @@ namespace Server
     {
         private const int RELEVANCE_DISTANCE_SQR = 40 * 40;
 
-        private ZoneRepository m_zoneRepository;
+        private Dictionary<int, Zone> m_zones;
 
         private WorldState m_worldState = new WorldState() 
         { 
@@ -77,8 +77,8 @@ namespace Server
             {
                 if (s.CurrentZone == null || newZoneID != s.CurrentZone.ID)
                 {
-                    Zone newZone = m_zoneRepository.GetZoneByID(newZoneID);
-                    if (newZone != null)
+                    Zone newZone = default(Zone);
+                    if (m_zones.TryGetValue(newZoneID, out newZone))
                     {
                         if (s.CurrentZone != null)
                         {

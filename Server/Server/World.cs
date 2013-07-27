@@ -1,4 +1,6 @@
 ﻿using Data.Accounts;
+using Data.NPCs;
+using Data.Players;
 using NLog;
 using Server.Zones;
 using System;
@@ -23,12 +25,18 @@ namespace Server
         private DateTime m_lastUpdateTime;
 
         private IAccountRepository m_accountRepository;
-        private ZoneRepository m_zoneRepository;
+        private INPCRepository m_npcRepository;
+        private IPlayerRepository m_playerRepository;
 
-        public World(IAccountRepository accountRepository, ZoneRepository zoneRepository)
+        private Dictionary<int, Zone> m_zones;
+
+        public World(IAccountRepository accountRepository, INPCRepository npcRepository, IPlayerRepository playerRepository)
         {
             m_accountRepository = accountRepository;
-            m_zoneRepository = zoneRepository;
+            m_npcRepository = npcRepository;
+            m_playerRepository = playerRepository;
+
+            m_zones = BuildZones(m_npcRepository);
 
             m_worldUpdateThread = new Thread(WorldUpdate);
             m_worldUpdateThread.Start();
@@ -38,7 +46,7 @@ namespace Server
         {
             sock.NoDelay = true;
 
-            PlayerPeer p = new PlayerPeer(sock, m_accountRepository, m_zoneRepository);
+            PlayerPeer p = new PlayerPeer(sock, m_accountRepository, m_zones);
 
             //NOTE: Code here will block the AcceptSocket loop, so make sure it stays lean
             m_players[p.ID] = p;
@@ -85,6 +93,14 @@ namespace Server
 
                 Thread.Sleep(restTime);
             }
+        }
+
+        private Dictionary<int, Zone> BuildZones(INPCRepository npcRepository)
+        {
+            Dictionary<int, Zone> zones = new Dictionary<int, Zone>();
+            zones.Add(0, new Zone(0, m_npcRepository));
+            zones.Add(1, new Zone(1, m_npcRepository));
+            return zones;
         }
     }
 }

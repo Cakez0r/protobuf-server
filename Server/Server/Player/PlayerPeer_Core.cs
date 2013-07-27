@@ -4,6 +4,7 @@ using Protocol;
 using Server.Utility;
 using Server.Zones;
 using System;
+using System.Collections.Generic;
 using System.Net.Sockets;
 
 namespace Server
@@ -27,11 +28,11 @@ namespace Server
             private set;
         }
 
-        public PlayerPeer(Socket socket, IAccountRepository accountRepository, ZoneRepository zoneRepository) : base(socket)
+        public PlayerPeer(Socket socket, IAccountRepository accountRepository, Dictionary<int, Zone> zones) : base(socket)
         {
             m_playerStateAccessor = new ThreadSafeWrapper<PlayerState>(m_playerState, Fiber);
             m_accountRepository = accountRepository;
-            m_zoneRepository = zoneRepository;
+            m_zones = zones;
 
             InitialiseRoutes();
         }
