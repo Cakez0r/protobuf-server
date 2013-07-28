@@ -15,7 +15,9 @@ namespace Server
         private WorldState m_worldState = new WorldState() 
         { 
             PlayerStates = new List<PlayerStateUpdate_S2C>(),
-            PlayerIntroductions = new List<PlayerIntroduction>()
+            PlayerIntroductions = new List<PlayerIntroduction>(),
+            NPCStates = new List<NPCStateUpdate>(),
+            NPCIntroductions = new List<NPCIntroduction>()
         };
 
         private HashSet<int> m_introducedPlayers = new HashSet<int>();

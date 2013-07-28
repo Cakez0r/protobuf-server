@@ -39,7 +39,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unity|AnyCPU'">
     <OutputPath>bin\Unity\</OutputPath>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <TargetFrameworkProfile></TargetFrameworkProfile>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
     <ErrorReport>prompt</ErrorReport>
@@ -55,6 +56,8 @@
   <ItemGroup>
     <Compile Include="AuthenticationAttempt.cs" />
     <Compile Include="ChatMessage.cs" />
+    <Compile Include="NPCIntroduction.cs" />
+    <Compile Include="NPCStateUpdate.cs" />
     <Compile Include="Ping.cs" />
     <Compile Include="Packet.cs" />
     <Compile Include="PlayerIntroduction.cs" />

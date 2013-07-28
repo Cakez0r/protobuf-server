@@ -10,5 +10,6 @@ namespace Data.NPCs
     {
         IEnumerable<NPCModel> GetNPCs();
         IEnumerable<NPCSpawnModel> GetNPCSpawns();
+        NPCModel GetNPCByID(int npcID);
     }
 }

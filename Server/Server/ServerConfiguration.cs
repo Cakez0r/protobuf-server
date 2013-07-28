@@ -10,5 +10,12 @@ namespace Server
             get { return (int)this["port"]; }
             set { this["port"] = value; }
         }
+
+        [ConfigurationProperty("relevanceDistanceSquared", DefaultValue = "1600", IsRequired = true)]
+        public float RelevanceDistanceSquared
+        {
+            get { return (float)this["relevanceDistanceSquared"]; }
+            set { this["relevanceDistanceSquared"] = value; }
+        }
     }
 }

@@ -1,4 +1,6 @@
 ﻿using Data.NPCs;
+using Protocol;
+using Server.NPC;
 using Server.Utility;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -7,7 +9,7 @@ using System.Linq;
 namespace Server.Zones
 {
     public class Zone
-    {
+    
         private Fiber m_fiber = new Fiber();
 
         private ConcurrentDictionary<int, PlayerPeer> m_playersInZone = new ConcurrentDictionary<int, PlayerPeer>();
@@ -16,7 +18,9 @@ namespace Server.Zones
 
         public IEnumerable<PlayerPeer> PlayersInZone { get; private set; }
 
-        public List<NPCSpawnModel> m_npcSpawns;
+        private List<NPCSpawnModel> m_npcSpawns;
+
+        private List<NPCInstance> m_npcs = new List<NPCInstance>();
 
         public int ID { get; private set; }
 
@@ -25,6 +29,9 @@ namespace Server.Zones
             m_npcRepository = npcRepository;
 
             m_npcSpawns = LoadZoneNPCSpawns();
+
+            //For now, NPCs will just be static spawns that don't move...
+            m_npcs = m_npcSpawns.Select(npc => new NPCInstance() { NPCModel = m_npcRepository.GetNPCByID(npc.NPCID) }).ToList();
 
             PlayersInZone = Enumerable.Empty<PlayerPeer>();
             ID = zoneID;
@@ -50,6 +57,24 @@ namespace Server.Zones
             if (m_playersInZone.TryRemove(player.ID, out removedPlayer))
             {
                 PlayersInZone = m_playersInZone.Values;
+            }
+        }
+
+        public void Update()
+        {
+            m_fiber.Enqueue(InternalUpdate);
+        }
+
+        private void InternalUpdate()
+        {
+        }
+
+        public void GatherNPCStatesForPlayer(PlayerPeer player, List<NPCStateUpdate> playerNPCStates)
+        {
+            playerNPCStates.Clear();
+            Vector2 playerPosition = new Vector2(player.LatestStateUpdate.X, player.LatestStateUpdate.Y);
+            foreach (NPCInstance npc in m_npcs)
+            {
             }
         }
     }

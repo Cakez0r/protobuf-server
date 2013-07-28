@@ -1,0 +1,5 @@
+﻿Make zones update with world update
+Load relevance distance from settings file
+On zone update, update all NPCS (use r/w lock)
+On player update, gather NPC states. Must lock collection because size might change. Don't use Latest State pattern...
+Take player and NPC ids from IDGenerator
