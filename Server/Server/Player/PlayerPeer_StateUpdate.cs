@@ -1,4 +1,5 @@
-﻿using Protocol;
+﻿using Data.NPCs;
+using Protocol;
 using Server.Utility;
 using Server.Zones;
 using System;
@@ -32,6 +33,9 @@ namespace Server
             get;
             private set;
         }
+
+        private HashSet<int> m_introducedNPCs = new HashSet<int>();
+        private INPCRepository m_npcRepository;
 
         private void Handle_PlayerStateUpdate(PlayerStateUpdate_C2S psu)
         {
@@ -67,6 +71,25 @@ namespace Server
                             m_introducedPlayers.Add(stateUpdate.PlayerID);
                         }
                     }
+                }
+            }
+
+            m_playerState.CurrentZone.GatherNPCStatesForPlayer(this, m_worldState.NPCStates);
+
+            foreach (NPCStateUpdate nsu in m_worldState.NPCStates)
+            {
+                if (!m_introducedNPCs.Contains(nsu.NPCID))
+                {
+                    NPCModel npc = m_npcRepository.GetNPCByID(nsu.NPCID);
+                    NPCIntroduction introduction = new NPCIntroduction()
+                    {
+                        Model = npc.Model,
+                        Name = npc.Name,
+                        NPCID = npc.NPCID,
+                        Scale = npc.Scale
+                    };
+                    m_worldState.NPCIntroductions.Add(introduction);
+                    m_introducedNPCs.Add(nsu.NPCID);
                 }
             }
 

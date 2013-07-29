@@ -1,5 +1,5 @@
-CREATE OR REPLACE FUNCTION GET_PlayerByAccountID(_accountID INTEGER)
-RETURNS SETOF Player
+﻿CREATE OR REPLACE FUNCTION GET_PlayerByAccountID(_accountID INTEGER)
+RETURNS SETOF PlayerModel
 AS $$
     SELECT
         PlayerID,
@@ -9,7 +9,8 @@ AS $$
         Power,
         Money,
         Map,
-        Position,
+        Position[0] AS X,
+        Position[1] AS Y,
         Rotation
     FROM
         Player

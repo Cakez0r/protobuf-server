@@ -1,5 +1,4 @@
-﻿using NpgsqlTypes;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,7 +15,8 @@ namespace Data.Players
         public float Power { get; set; }
         public long Money { get; set; }
         public int Map { get; set; }
-        public NpgsqlPoint Position { get; set; }
+        public double X { get; set; }
+        public double Y { get; set; }
         public float Rotation { get; set; }
     }
 }

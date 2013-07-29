@@ -46,7 +46,7 @@ namespace Server
         {
             sock.NoDelay = true;
 
-            PlayerPeer p = new PlayerPeer(sock, m_accountRepository, m_zones);
+            PlayerPeer p = new PlayerPeer(sock, m_accountRepository, m_npcRepository, m_zones);
 
             //NOTE: Code here will block the AcceptSocket loop, so make sure it stays lean
             m_players[p.ID] = p;
@@ -63,6 +63,11 @@ namespace Server
             while (true)
             {
                 updateTimer.Restart();
+                foreach (Zone zone in m_zones.Values)
+                {
+                    zone.Update();
+                }
+
                 Parallel.ForEach(m_players, kvp =>
                 {
                     PlayerPeer player = kvp.Value;

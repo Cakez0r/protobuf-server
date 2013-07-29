@@ -21,5 +21,8 @@ namespace Protocol
 
         [ProtoMember(4)]
         public float Rotation { get; set; }
+
+        [ProtoMember(5)]
+        public int NPCInstanceID { get; set; }
     }
 }

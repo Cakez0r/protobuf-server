@@ -85,6 +85,7 @@
     <Compile Include="Zones\Zone.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Notes.txt" />
     <None Include="App.config" />
     <Content Include="NLog.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

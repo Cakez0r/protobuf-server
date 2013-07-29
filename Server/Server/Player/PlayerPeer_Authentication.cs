@@ -34,11 +34,11 @@ namespace Server
             Respond(aa, new AuthenticationAttempt_S2C() { PlayerID = ID, Result = result });
         }
 
-        private static string HashPassword(string username, string password)
+        public static string HashPassword(string username, string password)
         {
             using(SHA512 sha = new SHA512Managed())
             {
-                string saltedPassword = string.Format("{0}{1}{2}", password, username, "{E54DC322-6F78-4500-86F2-8D9C688060B8}");
+                string saltedPassword = string.Format("{0}{1}{2}", password, username.ToLower(), "{E54DC322-6F78-4500-86F2-8D9C688060B8}");
                 byte[] input = Encoding.UTF8.GetBytes(password);
                 byte[] output = sha.ComputeHash(input);
                 return BitConverter.ToString(output).Replace("-", "");

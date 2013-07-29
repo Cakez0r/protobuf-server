@@ -1,4 +1,5 @@
 ﻿using Data.Accounts;
+using Data.NPCs;
 using NLog;
 using Protocol;
 using Server.Utility;
@@ -28,11 +29,12 @@ namespace Server
             private set;
         }
 
-        public PlayerPeer(Socket socket, IAccountRepository accountRepository, Dictionary<int, Zone> zones) : base(socket)
+        public PlayerPeer(Socket socket, IAccountRepository accountRepository, INPCRepository npcRepository, Dictionary<int, Zone> zones) : base(socket)
         {
             m_playerStateAccessor = new ThreadSafeWrapper<PlayerState>(m_playerState, Fiber);
             m_accountRepository = accountRepository;
             m_zones = zones;
+            m_npcRepository = npcRepository;
 
             InitialiseRoutes();
         }

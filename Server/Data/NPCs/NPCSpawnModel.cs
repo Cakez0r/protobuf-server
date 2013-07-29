@@ -1,5 +1,4 @@
-﻿using NpgsqlTypes;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,7 +10,8 @@ namespace Data.NPCs
     {
         public int NPCSpawnID { get; set; }
         public int NPCID { get; set; }
-        public NpgsqlPoint Position { get; set; }
+        public double X { get; set; }
+        public double Y { get; set; }
         public float Rotation { get; set; }
         public int MapNumber { get; set; }
         public TimeSpan Frequency { get; set; }

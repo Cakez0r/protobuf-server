@@ -16,8 +16,6 @@ namespace Server
 
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
-        private static int s_nextID = 1;
-
         private static BufferManager s_buffers;
 
         private Fiber m_fiber = new Fiber();
@@ -58,7 +56,7 @@ namespace Server
 
         public NetPeer(Socket socket)
         {
-            ID = s_nextID++;
+            ID = IDGenerator.GetNextID();
             m_receiveBuffer = new MemoryStream();
             m_socket = socket;
             StartReceiving();

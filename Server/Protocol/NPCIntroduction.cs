@@ -17,7 +17,7 @@ namespace Protocol
         public string Name { get; set; }
 
         [ProtoMember(3)]
-        public int Model { get; set; }
+        public string Model { get; set; }
 
         [ProtoMember(4)]
         public float Scale { get; set; }
