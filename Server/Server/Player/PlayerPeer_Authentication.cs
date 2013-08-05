@@ -34,7 +34,7 @@ namespace Server
             Respond(aa, new AuthenticationAttempt_S2C() { PlayerID = ID, Result = result });
         }
 
-        public static string HashPassword(string username, string password)
+        private static string HashPassword(string username, string password)
         {
             using(SHA512 sha = new SHA512Managed())
             {

@@ -98,7 +98,17 @@ namespace Server
 
         public override void Dispose()
         {
-            m_playerState.CurrentZone.RemoveFromZone(this);
+            try
+            {
+                if (m_playerState.CurrentZone != null)
+                {
+                    m_playerState.CurrentZone.RemoveFromZone(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                s_log.Warn("Failed to dispose player: {0}", ex);
+            }
 
             base.Dispose();
         }

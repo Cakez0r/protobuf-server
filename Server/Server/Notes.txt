@@ -1,1 +1,5 @@
-﻿
+﻿Fix bug where player begins updating before receiving first state update.
+
+Async join and leave to stop world update overflowing
+
+Metrics
