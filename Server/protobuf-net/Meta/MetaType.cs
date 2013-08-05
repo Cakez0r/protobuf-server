@@ -14,7 +14,7 @@ using IKVM.Reflection.Emit;
 #else
 using System.Reflection;
 #if FEAT_COMPILER
-using System.Reflection.Emit;
+
 #endif
 #endif
 

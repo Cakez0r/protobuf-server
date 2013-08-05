@@ -5,7 +5,6 @@ using Microsoft.Practices.Unity;
 using Microsoft.Practices.Unity.Configuration;
 using NLog;
 using Protocol;
-using Server.Zones;
 using System.Configuration;
 using System.Net;
 using System.Net.Sockets;

@@ -1,12 +1,11 @@
-﻿using System;
+﻿using ProtoBuf.Meta;
+using System;
 using System.ComponentModel;
-
-using ProtoBuf.Meta;
 #if FEAT_IKVM
 using Type = IKVM.Reflection.Type;
 using IKVM.Reflection;
 #else
-using System.Reflection;
+
 #endif
 namespace ProtoBuf
 {
