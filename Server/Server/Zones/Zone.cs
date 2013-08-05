@@ -1,9 +1,12 @@
 ﻿using Data.NPCs;
+using NLog;
 using Protocol;
 using Server.NPC;
 using Server.Utility;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 
@@ -13,11 +16,14 @@ namespace Server.Zones
     {
         private const float RELEVANCE_DISTANCE_SQR = 40 * 40;
 
+        private static Logger s_log = LogManager.GetCurrentClassLogger();
+
         private Fiber m_fiber = new Fiber();
 
         private ConcurrentDictionary<int, PlayerPeer> m_playersInZone = new ConcurrentDictionary<int, PlayerPeer>();
 
         private INPCRepository m_npcRepository;
+        private NPCFactory m_npcFactory;
 
         public IEnumerable<PlayerPeer> PlayersInZone { get; private set; }
 
@@ -26,19 +32,22 @@ namespace Server.Zones
         private ReaderWriterLockSlim m_npcLock = new ReaderWriterLockSlim();
         private List<NPCInstance> m_npcs = new List<NPCInstance>();
 
+        private DateTime m_lastUpdateTime = DateTime.Now;
+
         public int ID { get; private set; }
 
-        public Zone(int zoneID, INPCRepository npcRepository)
+        public Zone(int zoneID, INPCRepository npcRepository, NPCFactory npcFactory)
         {
+            ID = zoneID;
+
             m_npcRepository = npcRepository;
+            m_npcFactory = npcFactory;
 
             m_npcSpawns = LoadZoneNPCSpawns();
 
-            //For now, NPCs will just be static spawns that don't move...
-            m_npcs = m_npcSpawns.Select(npcSpawn => new NPCInstance(m_npcRepository.GetNPCByID(npcSpawn.NPCID), npcSpawn)).ToList();
+            m_npcs = m_npcSpawns.Select(npcSpawn => npcFactory.SpawnNPC(npcSpawn)).ToList();
 
             PlayersInZone = Enumerable.Empty<PlayerPeer>();
-            ID = zoneID;
         }
 
         private List<NPCSpawnModel> LoadZoneNPCSpawns()
@@ -71,15 +80,17 @@ namespace Server.Zones
 
         private void InternalUpdate()
         {
+            TimeSpan dt = DateTime.Now - m_lastUpdateTime;
+            
             m_npcLock.EnterWriteLock();
-            //TODO: Patrollin'
             foreach (NPCInstance npc in m_npcs)
             {
-                npc.StateUpdate.X = (float)npc.NPCSpawnModel.X;
-                npc.StateUpdate.Y = (float)npc.NPCSpawnModel.Y;
-                npc.StateUpdate.Rotation = npc.NPCSpawnModel.Rotation;
+                npc.Update(dt);
+                s_log.Debug("NPC {0} Position [{1}, {2}]", npc.ID, npc.Position.X, npc.Position.Y);
             }
             m_npcLock.ExitWriteLock();
+
+            m_lastUpdateTime = DateTime.Now;
         }
 
         public void GatherNPCStatesForPlayer(PlayerPeer player, List<NPCStateUpdate> playerNPCStates)

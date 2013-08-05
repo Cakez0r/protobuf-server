@@ -15,7 +15,7 @@ namespace Data
             m_connectionString = ConfigurationManager.AppSettings["ConnectionString"];
         }
 
-        protected IEnumerable<T> Function<T>(string functionName, object parameters)
+        protected IEnumerable<T> Function<T>(string functionName, object parameters = null)
         {
             using (NpgsqlConnection sql = new NpgsqlConnection(m_connectionString))
             {
@@ -24,7 +24,7 @@ namespace Data
             }
         }
 
-        protected int Function(string functionName, object parameters)
+        protected int Function(string functionName, object parameters = null)
         {
             using (NpgsqlConnection sql = new NpgsqlConnection(m_connectionString))
             {

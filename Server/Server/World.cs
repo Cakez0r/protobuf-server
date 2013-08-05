@@ -2,6 +2,7 @@
 using Data.NPCs;
 using Data.Players;
 using NLog;
+using Server.NPC;
 using Server.Zones;
 using System;
 using System.Collections.Concurrent;
@@ -28,6 +29,8 @@ namespace Server
         private INPCRepository m_npcRepository;
         private IPlayerRepository m_playerRepository;
 
+        private NPCFactory m_npcFactory;
+
         private Dictionary<int, Zone> m_zones;
 
         public World(IAccountRepository accountRepository, INPCRepository npcRepository, IPlayerRepository playerRepository)
@@ -35,6 +38,8 @@ namespace Server
             m_accountRepository = accountRepository;
             m_npcRepository = npcRepository;
             m_playerRepository = playerRepository;
+
+            m_npcFactory = new NPCFactory(npcRepository);
 
             m_zones = BuildZones(m_npcRepository);
 
@@ -103,8 +108,8 @@ namespace Server
         private Dictionary<int, Zone> BuildZones(INPCRepository npcRepository)
         {
             Dictionary<int, Zone> zones = new Dictionary<int, Zone>();
-            zones.Add(0, new Zone(0, m_npcRepository));
-            zones.Add(1, new Zone(1, m_npcRepository));
+            zones.Add(0, new Zone(0, m_npcRepository, m_npcFactory));
+            zones.Add(1, new Zone(1, m_npcRepository, m_npcFactory));
             return zones;
         }
     }

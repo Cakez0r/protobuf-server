@@ -59,6 +59,8 @@
     <Compile Include="Accounts\IAccountRepository.cs" />
     <Compile Include="Accounts\PostgresAccountRepository.cs" />
     <Compile Include="NPCs\INPCRepository.cs" />
+    <Compile Include="NPCs\NPCBehaviourModel.cs" />
+    <Compile Include="NPCs\NPCBehaviourVarModel.cs" />
     <Compile Include="NPCs\NPCModel.cs" />
     <Compile Include="NPCs\NPCSpawnModel.cs" />
     <Compile Include="NPCs\PostgresNPCRepository.cs" />

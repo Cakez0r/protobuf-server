@@ -34,6 +34,12 @@ namespace Server
             s_log.Info("Precaching NPC Spawns...");
             npcRepository.GetNPCSpawns();
 
+            s_log.Info("Precaching NPC Behaviours...");
+            npcRepository.GetNPCBehaviours();
+
+            s_log.Info("Precaching NPC Behaviour Vars...");
+            npcRepository.GetNPCBehaviourVars();
+
             s_log.Info("Creating world...");
             World world = new World(accountRepository, npcRepository, playerRepository);
 

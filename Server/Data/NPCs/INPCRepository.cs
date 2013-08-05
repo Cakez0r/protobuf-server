@@ -11,5 +11,9 @@ namespace Data.NPCs
         IEnumerable<NPCModel> GetNPCs();
         IEnumerable<NPCSpawnModel> GetNPCSpawns();
         NPCModel GetNPCByID(int npcID);
+        IEnumerable<NPCBehaviourModel> GetNPCBehaviours();
+        IEnumerable<NPCBehaviourVarModel> GetNPCBehaviourVars();
+        IEnumerable<NPCBehaviourModel> GetNPCBehavioursByNPCID(int npcID);
+        IReadOnlyDictionary<string, string> GetNPCBehaviourVarsByNPCBehaviourID(int npcBehaviourID);
     }
 }

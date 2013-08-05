@@ -65,6 +65,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="NPC\Behaviours\WanderRadiusNPCBehaviour.cs" />
+    <Compile Include="NPC\INPCBehaviour.cs" />
+    <Compile Include="NPC\NPCFactory.cs" />
     <Compile Include="NPC\NPCInstance.cs" />
     <Compile Include="Player\PlayerPeer_Authentication.cs" />
     <Compile Include="Player\PlayerPeer_StateUpdate.cs" />
