@@ -85,7 +85,6 @@ namespace Server.Zones
             foreach (NPCInstance npc in m_npcs)
             {
                 npc.Update(dt);
-                s_log.Debug("NPC {0} Position [{1}, {2}]", npc.ID, npc.Position.X, npc.Position.Y);
             }
             m_npcLock.ExitWriteLock();
 
