@@ -1,6 +1,7 @@
 ﻿using Data.Accounts;
 using Data.NPCs;
 using Data.Players;
+using Data.Stats;
 using Microsoft.Practices.Unity;
 using Microsoft.Practices.Unity.Configuration;
 using NLog;
@@ -8,6 +9,7 @@ using Protocol;
 using System.Configuration;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace Server
 {
@@ -26,6 +28,15 @@ namespace Server
             IAccountRepository accountRepository = repositoryResolver.Resolve<IAccountRepository>();
             INPCRepository npcRepository = repositoryResolver.Resolve<INPCRepository>();
             IPlayerRepository playerRepository = repositoryResolver.Resolve<IPlayerRepository>();
+            IStatsRepository statsRepository = new NullStatsRepository();
+            try
+            {
+                statsRepository = repositoryResolver.Resolve<IStatsRepository>();
+            }
+            catch
+            {
+                s_log.Warn("Failed to create stats repository. Stats will be disabled.");
+            }
 
             s_log.Info("Precaching NPCs...");
             npcRepository.GetNPCs();
@@ -40,8 +51,9 @@ namespace Server
             npcRepository.GetNPCBehaviourVars();
 
             s_log.Info("Creating world...");
-            World world = new World(accountRepository, npcRepository, playerRepository);
+            World world = new World(accountRepository, npcRepository, playerRepository, statsRepository);
 
+            s_log.Info("Initialising serializer...");
             ProtocolUtility.InitialiseSerializer();
 
             TcpListener listener = new TcpListener(IPAddress.Any, config.Port);

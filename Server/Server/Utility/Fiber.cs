@@ -8,6 +8,11 @@ namespace Server.Utility
     {
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
+        public int WorkQueueLength
+        {
+            get { return m_workQueue.InputCount; }
+        }
+
         private ActionBlock<Action> m_workQueue;
 
         public Fiber()

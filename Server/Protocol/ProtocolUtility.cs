@@ -63,6 +63,8 @@ namespace Protocol
                 {
                     metaType.AddSubType(startTag++, packetSubclass);
                 }
+
+                RuntimeTypeModel.Default.CompileInPlace();
             }
         }
     }

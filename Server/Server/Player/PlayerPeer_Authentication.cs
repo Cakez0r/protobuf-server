@@ -18,7 +18,7 @@ namespace Server
             AuthenticationAttempt_S2C.ResponseCode result;
             if (account != null)
             {
-                Introduction = new PlayerIntroduction() { PlayerID = ID, Name = "[" + ID.ToString() + "]" + account.Username };
+                Introduction = new PlayerIntroduction() { PlayerID = ID, Name = account.Username };
                 s_log.Info("[{0}] Authenticated as {1}", ID, account.Username);
                 result = AuthenticationAttempt_S2C.ResponseCode.OK;
                 IsAuthenticated = true;

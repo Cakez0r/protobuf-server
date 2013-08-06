@@ -35,6 +35,11 @@ namespace Server.Zones
 
         public int ID { get; private set; }
 
+        public int WorkQueueLength
+        {
+            get { return m_fiber.WorkQueueLength; }
+        }
+
         public Zone(int zoneID, INPCRepository npcRepository, NPCFactory npcFactory)
         {
             ID = zoneID;

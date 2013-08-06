@@ -1,6 +1,8 @@
-﻿using Data.Accounts;
+﻿using System.Linq;
+using Data.Accounts;
 using Data.NPCs;
 using Data.Players;
+using Data.Stats;
 using NLog;
 using Server.NPC;
 using Server.Zones;
@@ -17,6 +19,7 @@ namespace Server
     public class World
     {
         private const int TARGET_UPDATE_TIME_MS = 50;
+        private const int STATS_UPDATE_INTERVAL_MS = 1000;
 
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
@@ -25,19 +28,23 @@ namespace Server
         private Thread m_worldUpdateThread;
         private DateTime m_lastUpdateTime;
 
+        private Thread m_statsThread;
+
         private IAccountRepository m_accountRepository;
         private INPCRepository m_npcRepository;
         private IPlayerRepository m_playerRepository;
+        private IStatsRepository m_statsRepository;
 
         private NPCFactory m_npcFactory;
 
         private Dictionary<int, Zone> m_zones;
 
-        public World(IAccountRepository accountRepository, INPCRepository npcRepository, IPlayerRepository playerRepository)
+        public World(IAccountRepository accountRepository, INPCRepository npcRepository, IPlayerRepository playerRepository, IStatsRepository statsRepository)
         {
             m_accountRepository = accountRepository;
             m_npcRepository = npcRepository;
             m_playerRepository = playerRepository;
+            m_statsRepository = statsRepository;
 
             m_npcFactory = new NPCFactory(npcRepository);
 
@@ -45,6 +52,9 @@ namespace Server
 
             m_worldUpdateThread = new Thread(WorldUpdate);
             m_worldUpdateThread.Start();
+
+            m_statsThread = new Thread(StatsUpdate);
+            m_statsThread.Start();
         }
 
         public void AcceptSocket(Socket sock)
@@ -61,7 +71,7 @@ namespace Server
 
         private void WorldUpdate()
         {
-            s_log.Info("World update thread started"); 
+            s_log.Info("World update thread started");
 
             m_lastUpdateTime = DateTime.Now;
             Stopwatch updateTimer = new Stopwatch();
@@ -102,6 +112,57 @@ namespace Server
                 m_lastUpdateTime = DateTime.Now;
 
                 Thread.Sleep(restTime);
+            }
+        }
+
+        private void StatsUpdate()
+        {
+            PerformanceCounter cpuCounter;
+
+            cpuCounter = new PerformanceCounter();
+
+            cpuCounter.CategoryName = "Processor";
+            cpuCounter.CounterName = "% Processor Time";
+            cpuCounter.InstanceName = "_Total";
+
+            long lastBytesIn = 0;
+            long lastBytesOut = 0;
+            long lastPacketsIn = 0;
+            long lastPacketsOut = 0;
+
+            while (true)
+            {
+                m_statsRepository.CPUUsage = (int)cpuCounter.NextValue();
+
+                long bytesIn = NetPeer.TotalBytesIn;
+                long bytesOut = NetPeer.TotalBytesOut;
+                long packetsIn = NetPeer.TotalPacketsIn;
+                long packetsOut = NetPeer.TotalPacketsOut;
+
+                m_statsRepository.TotalBytesIn = bytesIn;
+                m_statsRepository.TotalBytesOut = bytesOut;
+                m_statsRepository.TotalPacketsIn = packetsIn;
+                m_statsRepository.TotalPacketsOut = packetsOut;
+
+                m_statsRepository.BytesInPerSecond = bytesIn - lastBytesIn;
+                m_statsRepository.BytesOutPerSecond = bytesOut - lastBytesOut;
+                m_statsRepository.PacketsInPerSecond = packetsIn - lastPacketsIn;
+                m_statsRepository.PacketsOutPerSecond = packetsOut - lastPacketsOut;
+
+                lastBytesIn = bytesIn;
+                lastBytesOut = bytesOut;
+                lastPacketsIn = packetsIn;
+                lastPacketsOut = packetsOut;
+
+                m_statsRepository.ZoneWorkQueueLengths = m_zones.ToDictionary(kvp => "Zone " + kvp.Value.ID, kvp => (long)kvp.Value.WorkQueueLength);
+
+                List<PlayerPeer> players = m_players.Values.Where(p => p.Introduction != null).ToList();
+                
+                m_statsRepository.OnlinePlayerCount = players.Count;
+
+                m_statsRepository.PlayerWorkQueueLengths = players.ToDictionary(p => p.Introduction.Name, p => (long)p.WorkQueueLength);
+
+                Thread.Sleep(STATS_UPDATE_INTERVAL_MS);
             }
         }
 

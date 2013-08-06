@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Net.Sockets;
 using System.ServiceModel.Channels;
+using System.Threading;
 
 namespace Server
 {
@@ -48,6 +49,37 @@ namespace Server
         {
             get { return m_fiber; }
         }
+
+        #region Stats
+        public int WorkQueueLength
+        {
+            get { return m_fiber.WorkQueueLength; }
+        }
+
+        private static long s_totalBytesIn;
+        public static long TotalBytesIn
+        {
+            get { return s_totalBytesIn;  }
+        }
+
+        private static long s_totalBytesOut;
+        public static long TotalBytesOut
+        {
+            get { return s_totalBytesOut; }
+        }
+
+        private static long s_totalPacketsIn;
+        public static long TotalPacketsIn
+        {
+            get { return s_totalPacketsIn; }
+        }
+
+        private static long s_totalPacketsOut;
+        public static long TotalPacketsOut
+        {
+            get { return s_totalPacketsOut; }
+        }
+        #endregion
 
         static NetPeer()
         {
@@ -122,6 +154,10 @@ namespace Server
         private void SendCompleted(object o, SocketAsyncEventArgs eventArgs)
         {
             ReturnBuffer(eventArgs.Buffer);
+
+            Interlocked.Increment(ref s_totalPacketsOut);
+            Interlocked.Add(ref s_totalBytesOut, eventArgs.BytesTransferred);
+
             eventArgs.Dispose();
         }
 
@@ -171,6 +207,8 @@ namespace Server
                             Packet packet = (Packet)obj;
                             m_fiber.Enqueue(() => DispatchPacket(packet));
 
+                            Interlocked.Increment(ref s_totalPacketsIn);
+
                             prev = m_continueReadFrom;
                         }
                     }
@@ -195,6 +233,8 @@ namespace Server
                     }
 
                     m_lastBufferSize = m_receiveBuffer.Length;
+
+                    Interlocked.Add(ref s_totalBytesIn, eventArgs.BytesTransferred);
 
                     Receive(eventArgs);
                 }
