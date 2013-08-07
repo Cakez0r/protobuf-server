@@ -26,7 +26,12 @@ namespace Data
         private void Connect(string host)
         {
             Redis = new RedisConnection(host);
-            Redis.Open().Wait();
+            Task connectionTask = Redis.Open();
+            connectionTask.Wait(1000);
+            if (connectionTask.Status != TaskStatus.RanToCompletion)
+            {
+                throw new RedisException("Failed to connect to Redis in time.");
+            }
         }
 
         protected T SynchronousResult<T>(Task<T> t)
