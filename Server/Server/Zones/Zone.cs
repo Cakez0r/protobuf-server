@@ -6,6 +6,7 @@ using Server.Utility;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 
@@ -33,12 +34,10 @@ namespace Server.Zones
 
         private DateTime m_lastUpdateTime = DateTime.Now;
 
-        public int ID { get; private set; }
+        private Stopwatch m_zoneUpdateTimer = new Stopwatch();
+        public long LastUpdateLength { get; private set; }
 
-        public int WorkQueueLength
-        {
-            get { return m_fiber.WorkQueueLength; }
-        }
+        public int ID { get; private set; }
 
         public Zone(int zoneID, INPCRepository npcRepository, NPCFactory npcFactory)
         {
@@ -84,6 +83,7 @@ namespace Server.Zones
 
         private void InternalUpdate()
         {
+            m_zoneUpdateTimer.Restart();
             TimeSpan dt = DateTime.Now - m_lastUpdateTime;
             
             m_npcLock.EnterWriteLock();
@@ -94,6 +94,8 @@ namespace Server.Zones
             m_npcLock.ExitWriteLock();
 
             m_lastUpdateTime = DateTime.Now;
+            m_zoneUpdateTimer.Stop();
+            LastUpdateLength = m_zoneUpdateTimer.ElapsedMilliseconds;
         }
 
         public void GatherNPCStatesForPlayer(PlayerPeer player, List<NPCStateUpdate> playerNPCStates)

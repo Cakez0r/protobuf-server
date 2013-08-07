@@ -39,6 +39,8 @@ namespace Server
 
         private Dictionary<int, Zone> m_zones;
 
+        private int m_lastWorldUpdateLength;
+
         public World(IAccountRepository accountRepository, INPCRepository npcRepository, IPlayerRepository playerRepository, IStatsRepository statsRepository)
         {
             m_accountRepository = accountRepository;
@@ -101,7 +103,8 @@ namespace Server
                 });
                 updateTimer.Stop();
 
-                int restTime = TARGET_UPDATE_TIME_MS - (int)updateTimer.ElapsedMilliseconds;
+                m_lastWorldUpdateLength = (int)updateTimer.ElapsedMilliseconds;
+                int restTime = TARGET_UPDATE_TIME_MS - m_lastWorldUpdateLength;
 
                 if (restTime < 0)
                 {
@@ -149,18 +152,16 @@ namespace Server
                 m_statsRepository.PacketsInPerSecond = packetsIn - lastPacketsIn;
                 m_statsRepository.PacketsOutPerSecond = packetsOut - lastPacketsOut;
 
+                m_statsRepository.WorldUpdateTime = m_lastWorldUpdateLength;
+
                 lastBytesIn = bytesIn;
                 lastBytesOut = bytesOut;
                 lastPacketsIn = packetsIn;
                 lastPacketsOut = packetsOut;
 
-                m_statsRepository.ZoneWorkQueueLengths = m_zones.ToDictionary(kvp => "Zone " + kvp.Value.ID, kvp => (long)kvp.Value.WorkQueueLength);
+                m_statsRepository.OnlinePlayerCount = m_players.Count;
 
-                List<PlayerPeer> players = m_players.Values.Where(p => p.Introduction != null).ToList();
-                
-                m_statsRepository.OnlinePlayerCount = players.Count;
-
-                m_statsRepository.PlayerWorkQueueLengths = players.ToDictionary(p => p.Introduction.Name, p => (long)p.WorkQueueLength);
+                m_statsRepository.ZoneUpdateTimes = m_zones.Values.ToDictionary(z => "Zone " + z.ID, z => z.LastUpdateLength);
 
                 Thread.Sleep(STATS_UPDATE_INTERVAL_MS);
             }
