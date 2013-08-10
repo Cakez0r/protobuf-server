@@ -9,7 +9,6 @@ using Protocol;
 using System.Configuration;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading.Tasks;
 
 namespace Server
 {
