@@ -9,6 +9,6 @@ namespace Data.Abilities
         AbilityModel GetAbilityByID(int abilityID);
         IEnumerable<AbilityBehaviourVarModel> GetAbilityBehaviourVars();
         IEnumerable<AbilityBehaviourModel> GetAbilityBehavioursByAbilityID(int abilityID);
-        IReadOnlyDictionary<string, string> GetNPCBehaviourVarsByNPCBehaviourID(int abilityBehaviourID);
+        IReadOnlyDictionary<string, string> GetAbilityBehaviourVarsByAbilityBehaviourID(int abilityBehaviourID);
     }
 }

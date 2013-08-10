@@ -1,4 +1,5 @@
-﻿using Data.Accounts;
+﻿using Data.Abilities;
+using Data.Accounts;
 using Data.NPCs;
 using Data.Players;
 using Data.Stats;
@@ -27,6 +28,7 @@ namespace Server
             IAccountRepository accountRepository = repositoryResolver.Resolve<IAccountRepository>();
             INPCRepository npcRepository = repositoryResolver.Resolve<INPCRepository>();
             IPlayerRepository playerRepository = repositoryResolver.Resolve<IPlayerRepository>();
+            IAbilityRepository abilityRepository = repositoryResolver.Resolve<IAbilityRepository>();
             IStatsRepository statsRepository = new NullStatsRepository();
             try
             {
@@ -38,16 +40,41 @@ namespace Server
             }
 
             s_log.Info("Precaching NPCs...");
-            npcRepository.GetNPCs();
+            var npcs = npcRepository.GetNPCs();
 
             s_log.Info("Precaching NPC Spawns...");
             npcRepository.GetNPCSpawns();
 
             s_log.Info("Precaching NPC Behaviours...");
-            npcRepository.GetNPCBehaviours();
+            var npcBehaviours = npcRepository.GetNPCBehaviours();
+            foreach (NPCModel npc in npcs)
+            {
+                npcRepository.GetNPCBehavioursByNPCID(npc.NPCID);
+            }
 
             s_log.Info("Precaching NPC Behaviour Vars...");
             npcRepository.GetNPCBehaviourVars();
+            foreach (NPCBehaviourModel npcBehaviour in npcBehaviours)
+            {
+                npcRepository.GetNPCBehaviourVarsByNPCBehaviourID(npcBehaviour.NPCBehaviourID);
+            }
+
+            s_log.Info("Precaching abilities...");
+            var abilities = abilityRepository.GetAbilities();
+
+            s_log.Info("Precaching ability behaviours...");
+            var abilityBehaviours = abilityRepository.GetAbilityBehaviours();
+            foreach (AbilityModel ability in abilities)
+            {
+                abilityRepository.GetAbilityBehavioursByAbilityID(ability.AbilityID);
+            }
+
+            s_log.Info("Precaching ability behaviour vars...");
+            abilityRepository.GetAbilityBehaviourVars();
+            foreach (AbilityBehaviourModel abilityBehaviour in abilityBehaviours)
+            {
+                abilityRepository.GetAbilityBehaviourVarsByAbilityBehaviourID(abilityBehaviour.AbilityBehaviourID);
+            }
 
             s_log.Info("Creating world...");
             World world = new World(accountRepository, npcRepository, playerRepository, statsRepository);

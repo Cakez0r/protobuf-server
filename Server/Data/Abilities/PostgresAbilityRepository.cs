@@ -74,7 +74,7 @@ namespace Data.Abilities
             return behaviours;
         }
 
-        public IReadOnlyDictionary<string, string> GetNPCBehaviourVarsByNPCBehaviourID(int abilityBehaviourID)
+        public IReadOnlyDictionary<string, string> GetAbilityBehaviourVarsByAbilityBehaviourID(int abilityBehaviourID)
         {
             IReadOnlyDictionary<string, string> behaviourVars = default(IReadOnlyDictionary<string, string>);
 
