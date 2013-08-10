@@ -4,7 +4,8 @@ AS $$
     SELECT
         NPCBehaviourID,
         NPCID,
-        NPCBehaviourType
+        NPCBehaviourType,
+        ExecutionOrder
     FROM
         NPCBehaviour
 $$ LANGUAGE SQL;

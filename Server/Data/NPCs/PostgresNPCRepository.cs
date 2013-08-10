@@ -72,6 +72,11 @@ namespace Data.NPCs
         {
             IReadOnlyCollection<NPCBehaviourModel> behaviours = default(IReadOnlyCollection<NPCBehaviourModel>);
 
+            if (m_npcBehaviourCache == null)
+            {
+                GetNPCBehaviours();
+            }
+
             if (!m_npcBehaviourByNPCIDCache.TryGetValue(npcID, out behaviours))
             {
                 behaviours = m_npcBehaviourCache.Where(nb => nb.NPCID == npcID).ToList().AsReadOnly();
@@ -85,9 +90,14 @@ namespace Data.NPCs
         {
             IReadOnlyDictionary<string, string> behaviourVars = default(IReadOnlyDictionary<string, string>);
 
+            if (m_npcBehaviourVarCache == null)
+            {
+                GetNPCBehaviourVars();
+            }
+
             if (!m_npcBehaviourVarByNPCBehaviourIDCache.TryGetValue(npcBehaviourID, out behaviourVars))
             {
-                behaviourVars = m_npcBehaviourVarCache.Where(nbv => nbv.NPCBehaviourID == npcBehaviourID).ToDictionary(b => b.Key, b => b.Value);
+                behaviourVars = m_npcBehaviourVarCache.Where(nbv => nbv.NPCBehaviourID == npcBehaviourID).ToDictionary(nbv => nbv.Key, b => b.Value);
                 m_npcBehaviourVarByNPCBehaviourIDCache.Add(npcBehaviourID, behaviourVars);
             }
 
