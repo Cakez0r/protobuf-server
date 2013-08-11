@@ -1,5 +1,6 @@
 ﻿using Data.NPCs;
 using NLog;
+using Server.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +21,7 @@ namespace Server.NPC
             LoadBehaviourTypes();
         }
 
-        public NPCInstance SpawnNPC(NPCSpawnModel spawn)
+        public NPCInstance SpawnNPC(Fiber fiber, NPCSpawnModel spawn)
         {
             NPCModel npc = m_npcRepository.GetNPCByID(spawn.NPCID);
             List<INPCBehaviour> behaviours = new List<INPCBehaviour>();
@@ -34,7 +35,7 @@ namespace Server.NPC
                 behaviours.Add(behaviour);
             }
 
-            NPCInstance npcInstance = new NPCInstance(npc, spawn, behaviours);
+            NPCInstance npcInstance = new NPCInstance(fiber, npc, spawn, behaviours, m_npcRepository.GetNPCStatsByNPCID(spawn.NPCID));
 
             return npcInstance;
         }

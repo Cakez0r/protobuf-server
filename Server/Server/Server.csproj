@@ -65,13 +65,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Abilities\AbilityCoordinator.cs" />
+    <Compile Include="Abilities\AbilityInstance.cs" />
+    <Compile Include="Abilities\Behaviours\StaticDamageAbilityBehaviour.cs" />
+    <Compile Include="Abilities\IAbilityBehaviour.cs" />
+    <Compile Include="Abilities\ITargetable.cs" />
+    <Compile Include="Abilities\UseAbilityResult.cs" />
     <Compile Include="NPC\Behaviours\WanderRadiusNPCBehaviour.cs" />
     <Compile Include="NPC\INPCBehaviour.cs" />
     <Compile Include="NPC\NPCFactory.cs" />
     <Compile Include="NPC\NPCInstance.cs" />
+    <Compile Include="Player\PlayerPeer_Abilities.cs" />
     <Compile Include="Player\PlayerPeer_Authentication.cs" />
     <Compile Include="Player\PlayerPeer_StateUpdate.cs" />
-    <Compile Include="Player\PlayerState.cs" />
     <Compile Include="ServerConfiguration.cs" />
     <Compile Include="Utility\Fiber.cs" />
     <Compile Include="Network\NetPeer.cs" />

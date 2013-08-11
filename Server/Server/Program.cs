@@ -61,6 +61,10 @@ namespace Server
 
             s_log.Info("Precaching NPC Stats...");
             npcRepository.GetNPCStats();
+            foreach (NPCModel npc in npcs)
+            {
+                npcRepository.GetNPCStatsByNPCID(npc.NPCID);
+            }
 
             s_log.Info("Precaching abilities...");
             var abilities = abilityRepository.GetAbilities();

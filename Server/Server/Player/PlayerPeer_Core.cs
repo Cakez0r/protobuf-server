@@ -1,7 +1,9 @@
 ﻿using Data.Accounts;
 using Data.NPCs;
+using Data.Players;
 using NLog;
 using Protocol;
+using Server.Abilities;
 using Server.Utility;
 using Server.Zones;
 using System;
@@ -10,7 +12,7 @@ using System.Net.Sockets;
 
 namespace Server
 {
-    public partial class PlayerPeer : NetPeer
+    public partial class PlayerPeer : NetPeer, ITargetable
     {
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
@@ -20,8 +22,7 @@ namespace Server
         private int m_lastActivity = Environment.TickCount;
         private const int PING_TIMEOUT = 5000;
 
-        private PlayerState m_playerState = new PlayerState();
-        private ThreadSafeWrapper<PlayerState> m_playerStateAccessor;
+        private ThreadSafeWrapper<PlayerPeer> m_accessor;
 
         public bool IsAuthenticated
         {
@@ -29,10 +30,11 @@ namespace Server
             private set;
         }
 
-        public PlayerPeer(Socket socket, IAccountRepository accountRepository, INPCRepository npcRepository, Dictionary<int, Zone> zones) : base(socket)
+        public PlayerPeer(Socket socket, IAccountRepository accountRepository, INPCRepository npcRepository, IPlayerRepository playerRepository, Dictionary<int, Zone> zones) : base(socket)
         {
-            m_playerStateAccessor = new ThreadSafeWrapper<PlayerState>(m_playerState, Fiber);
+            m_accessor = new ThreadSafeWrapper<PlayerPeer>(this, Fiber);
             m_accountRepository = accountRepository;
+            m_playerRepository = playerRepository;
             m_zones = zones;
             m_npcRepository = npcRepository;
 
@@ -60,16 +62,16 @@ namespace Server
                 PlayerID = ID,
                 CurrentHP = 0,
                 MaxHP = 0,
-                Rot = m_playerState.Rotation,
-                TargetID = m_playerState.TargetID,
-                Time = m_playerState.TimeOnClient,
-                VelX = m_playerState.Velocity.X,
-                VelY = m_playerState.Velocity.Y,
-                X = m_playerState.Position.X,
-                Y = m_playerState.Position.Y
+                Rot = Rotation,
+                TargetID = TargetID,
+                Time = TimeOnClient,
+                VelX = Velocity.X,
+                VelY = Velocity.Y,
+                X = Position.X,
+                Y = Position.Y
             };
 
-            if (IsAuthenticated && m_playerState.CurrentZone != null)
+            if (IsAuthenticated && CurrentZone != null)
             {
                 BuildAndSendWorldStateUpdate();
             }
@@ -100,9 +102,9 @@ namespace Server
         {
             try
             {
-                if (m_playerState.CurrentZone != null)
+                if (CurrentZone != null)
                 {
-                    m_playerState.CurrentZone.RemoveFromZone(this);
+                    CurrentZone.RemoveFromZone(this);
                 }
             }
             catch (Exception ex)

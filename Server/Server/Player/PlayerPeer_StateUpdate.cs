@@ -37,15 +37,28 @@ namespace Server
         private HashSet<int> m_introducedNPCs = new HashSet<int>();
         private INPCRepository m_npcRepository;
 
+        public Vector2 Position { get; set; }
+        public Vector2 Velocity { get; set; }
+        public float Rotation { get; set; }
+
+        public int? TargetID { get; set; }
+
+        public int TimeOnClient { get; set; }
+
+        public Zone CurrentZone { get; set; }
+
+        public int Health { get; set; }
+        public int MaxHealth { get; set; }
+
         private void Handle_PlayerStateUpdate(PlayerStateUpdate_C2S psu)
         {
-            m_playerStateAccessor.Transaction((s) =>
+            m_accessor.Transaction((s) =>
             {
-                s.Rotation = psu.Rot;
-                s.Position = new Vector2(psu.X, psu.Y);
-                s.Velocity = new Vector2(psu.VelX, psu.VelY);
-                s.TimeOnClient = psu.Time;
-                s.TargetID = psu.TargetID;
+                Rotation = psu.Rot;
+                Position = new Vector2(psu.X, psu.Y);
+                Velocity = new Vector2(psu.VelX, psu.VelY);
+                TimeOnClient = psu.Time;
+                TargetID = psu.TargetID;
             });
         }
 
@@ -56,12 +69,12 @@ namespace Server
 
             m_worldState.CurrentServerTime = Environment.TickCount;
 
-            foreach (PlayerPeer player in m_playerState.CurrentZone.PlayersInZone)
+            foreach (PlayerPeer player in CurrentZone.PlayersInZone)
             {
                 if (player.ID != ID && player.LatestStateUpdate != null)
                 {
                     PlayerStateUpdate_S2C stateUpdate = player.LatestStateUpdate;
-                    float distanceSqr = Vector2.DistanceSquared(m_playerState.Position, new Vector2(stateUpdate.X, stateUpdate.Y));
+                    float distanceSqr = Vector2.DistanceSquared(Position, new Vector2(stateUpdate.X, stateUpdate.Y));
                     if (distanceSqr <= RELEVANCE_DISTANCE_SQR)
                     {
                         m_worldState.PlayerStates.Add(stateUpdate);
@@ -74,7 +87,7 @@ namespace Server
                 }
             }
 
-            m_playerState.CurrentZone.GatherNPCStatesForPlayer(this, m_worldState.NPCStates);
+            CurrentZone.GatherNPCStatesForPlayer(this, m_worldState.NPCStates);
 
             foreach (NPCStateUpdate nsu in m_worldState.NPCStates)
             {
@@ -98,7 +111,7 @@ namespace Server
 
         private void ChangeZone(int newZoneID)
         {
-            m_playerStateAccessor.Transaction((s) =>
+            m_accessor.Transaction((s) =>
             {
                 if (s.CurrentZone == null || newZoneID != s.CurrentZone.ID)
                 {

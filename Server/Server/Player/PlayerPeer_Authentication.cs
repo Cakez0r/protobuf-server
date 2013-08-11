@@ -1,14 +1,19 @@
 ﻿using Data.Accounts;
+using Data.Players;
 using Protocol;
 using System;
 using System.Security.Cryptography;
 using System.Text;
+using System.Linq;
 
 namespace Server
 {
     public partial class PlayerPeer
     {
         private IAccountRepository m_accountRepository;
+        private IPlayerRepository m_playerRepository;
+
+        private PlayerModel m_player;
 
         private void Handle_AuthenticationAttempt(AuthenticationAttempt_C2S aa)
         {
@@ -18,12 +23,26 @@ namespace Server
             AuthenticationAttempt_S2C.ResponseCode result;
             if (account != null)
             {
-                Introduction = new PlayerIntroduction() { PlayerID = ID, Name = account.Username };
-                s_log.Info("[{0}] Authenticated as {1}", ID, account.Username);
-                result = AuthenticationAttempt_S2C.ResponseCode.OK;
-                IsAuthenticated = true;
+                PlayerModel player = m_playerRepository.GetPlayersByAccountID(account.AccountID).FirstOrDefault();
 
-                ChangeZone(0);
+                if (player != null)
+                {
+                    m_player = player;
+                    m_stats = m_playerRepository.GetPlayerStatsByPlayerID(player.PlayerID).ToDictionary(stat => stat.StatID, stat => stat.StatValue);
+
+                    Introduction = new PlayerIntroduction() { PlayerID = ID, Name = account.Username };
+                    s_log.Info("[{0}] Authenticated as {1}", ID, account.Username);
+                    result = AuthenticationAttempt_S2C.ResponseCode.OK;
+
+                    ChangeZone(0);
+
+                    IsAuthenticated = true;
+                }
+                else
+                {
+                    result = AuthenticationAttempt_S2C.ResponseCode.Error;
+                    s_log.Info("[{0}] Username: {1} has no characters but tried to log in.", ID, aa.Username);
+                }
             }
             else
             {

@@ -48,7 +48,7 @@ namespace Server.Zones
 
             m_npcSpawns = LoadZoneNPCSpawns();
 
-            m_npcs = m_npcSpawns.Select(npcSpawn => npcFactory.SpawnNPC(npcSpawn)).ToList();
+            m_npcs = m_npcSpawns.Select(npcSpawn => npcFactory.SpawnNPC(m_fiber, npcSpawn)).ToList();
 
             PlayersInZone = Enumerable.Empty<PlayerPeer>();
         }

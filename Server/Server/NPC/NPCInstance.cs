@@ -1,12 +1,13 @@
 ﻿using Data.NPCs;
 using Protocol;
+using Server.Abilities;
 using Server.Utility;
 using System;
 using System.Collections.Generic;
 
 namespace Server.NPC
 {
-    public class NPCInstance
+    public class NPCInstance : ITargetable
     {
         public int ID { get; private set; }
 
@@ -16,16 +17,37 @@ namespace Server.NPC
 
         private List<INPCBehaviour> m_behaviours;
 
+        private IReadOnlyDictionary<int, float> m_stats;
+
+        private Fiber m_fiber;
+        ThreadSafeWrapper<ITargetable> m_accessor;
+
         public Vector2 Position
         {
             get;
             set;
         }
 
-        public NPCInstance(NPCModel npc, NPCSpawnModel npcSpawn, List<INPCBehaviour> behaviours)
+        public int Health
+        {
+            get;
+            set;
+        }
+
+        public int MaxHealth
+        {
+            get;
+            set;
+        }
+
+        public NPCInstance(Fiber fiber, NPCModel npc, NPCSpawnModel npcSpawn, List<INPCBehaviour> behaviours, IReadOnlyDictionary<int, float> stats)
         {
             NPCModel = npc;
             NPCSpawnModel = npcSpawn;
+            m_stats = stats;
+            m_fiber = fiber;
+
+            m_accessor = new ThreadSafeWrapper<ITargetable>(this, fiber);
 
             Position = new Vector2((float)npcSpawn.X, (float)npcSpawn.Y);
             ID = IDGenerator.GetNextID();
@@ -49,6 +71,20 @@ namespace Server.NPC
 
             StateUpdate.X = Position.X;
             StateUpdate.Y = Position.Y;
+        }
+
+        public float GetStatValue(int statID)
+        {
+            float value = default(float);
+
+            m_stats.TryGetValue(statID, out value);
+
+            return value;
+        }
+
+        public Future<UseAbilityResult> RunAbilityMutation(Func<ITargetable, UseAbilityResult> mutator)
+        {
+            return m_accessor.Transaction<UseAbilityResult>(mutator);
         }
     }
 }

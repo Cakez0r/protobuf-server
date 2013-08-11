@@ -80,9 +80,9 @@
     <Compile Include="PostgresRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RedisRepository.cs" />
-    <Compile Include="Stats\IStatsRepository.cs" />
-    <Compile Include="Stats\NullStatsRepository.cs" />
-    <Compile Include="Stats\RedisStatsRepository.cs" />
+    <Compile Include="ServerStats\IServerStatsRepository.cs" />
+    <Compile Include="ServerStats\NullServerStatsRepository.cs" />
+    <Compile Include="ServerStats\RedisServerStatsRepository.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
