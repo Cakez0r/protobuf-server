@@ -30,7 +30,7 @@ namespace Server
                     m_player = player;
                     m_stats = m_playerRepository.GetPlayerStatsByPlayerID(player.PlayerID).ToDictionary(stat => stat.StatID, stat => stat.StatValue);
 
-                    Introduction = new PlayerIntroduction() { PlayerID = ID, Name = account.Username };
+                    Introduction = new PlayerIntroduction() { PlayerID = ID, Name = player.Name };
                     s_log.Info("[{0}] Authenticated as {1}", ID, account.Username);
                     result = AuthenticationAttempt_S2C.ResponseCode.OK;
 
