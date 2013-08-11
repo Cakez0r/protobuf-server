@@ -46,7 +46,7 @@ namespace Server.Abilities
             if (ability != null)
             {
                 List<IAbilityBehaviour> behaviours = new List<IAbilityBehaviour>();
-                foreach (AbilityBehaviourModel behaviourModel in m_abilityRepository.GetAbilityBehavioursByAbilityID(ability.AbilityID))
+                foreach (AbilityBehaviourModel behaviourModel in m_abilityRepository.GetAbilityBehavioursByAbilityID(ability.AbilityID).OrderBy(b => b.ExecutionOrder))
                 {
                     IAbilityBehaviour behaviour = (IAbilityBehaviour)Activator.CreateInstance(m_behaviourTypes[behaviourModel.AbilityBehaviourID]);
 

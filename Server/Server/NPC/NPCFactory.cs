@@ -25,7 +25,7 @@ namespace Server.NPC
         {
             NPCModel npc = m_npcRepository.GetNPCByID(spawn.NPCID);
             List<INPCBehaviour> behaviours = new List<INPCBehaviour>();
-            foreach (NPCBehaviourModel behaviourModel in m_npcRepository.GetNPCBehavioursByNPCID(spawn.NPCID))
+            foreach (NPCBehaviourModel behaviourModel in m_npcRepository.GetNPCBehavioursByNPCID(spawn.NPCID).OrderBy(b => b.ExecutionOrder))
             {
                 INPCBehaviour behaviour = (INPCBehaviour)Activator.CreateInstance(m_behaviourTypes[behaviourModel.NPCBehaviourID]);
                 
