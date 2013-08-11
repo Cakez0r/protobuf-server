@@ -10,9 +10,12 @@ namespace Data.NPCs
         private IReadOnlyCollection<NPCBehaviourModel> m_npcBehaviourCache;
         private IReadOnlyCollection<NPCBehaviourVarModel> m_npcBehaviourVarCache;
         private IReadOnlyCollection<NPCSpawnModel> m_npcSpawnCache;
+        private IReadOnlyCollection<NPCStatModel> m_npcStatCache;
 
         private Dictionary<int, IReadOnlyCollection<NPCBehaviourModel>> m_npcBehaviourByNPCIDCache = new Dictionary<int,IReadOnlyCollection<NPCBehaviourModel>>();
         private Dictionary<int, IReadOnlyDictionary<string, string>> m_npcBehaviourVarByNPCBehaviourIDCache = new Dictionary<int,IReadOnlyDictionary<string, string>>();
+        private Dictionary<int, IReadOnlyCollection<NPCStatModel>> m_npcStatByNPCIDCache = new Dictionary<int, IReadOnlyCollection<NPCStatModel>>();
+
 
         public IEnumerable<NPCModel> GetNPCs()
         {
@@ -102,6 +105,34 @@ namespace Data.NPCs
             }
 
             return behaviourVars;
+        }
+
+        public IEnumerable<NPCStatModel> GetNPCStats()
+        {
+            if (m_npcStatCache == null)
+            {
+                m_npcStatCache = Function<NPCStatModel>("GET_NPCStats").ToList().AsReadOnly();
+            }
+
+            return m_npcStatCache;
+        }
+
+        public IEnumerable<NPCStatModel> GetNPCStatsByNPCID(int npcID)
+        {
+            IReadOnlyCollection<NPCStatModel> npcStats = default(IReadOnlyCollection<NPCStatModel>);
+
+            if (m_npcStatCache == null)
+            {
+                GetNPCStats();
+            }
+
+            if (!m_npcStatByNPCIDCache.TryGetValue(npcID, out npcStats))
+            {
+                npcStats = m_npcStatCache.Where(stat => stat.NPCID == npcID).ToList().AsReadOnly();
+                m_npcStatByNPCIDCache.Add(npcID, npcStats);
+            }
+
+            return npcStats;
         }
     }
 }

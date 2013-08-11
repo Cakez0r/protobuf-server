@@ -59,6 +59,9 @@ namespace Server
                 npcRepository.GetNPCBehaviourVarsByNPCBehaviourID(npcBehaviour.NPCBehaviourID);
             }
 
+            s_log.Info("Precaching NPC Stats...");
+            npcRepository.GetNPCStats();
+
             s_log.Info("Precaching abilities...");
             var abilities = abilityRepository.GetAbilities();
 

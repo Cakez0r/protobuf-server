@@ -71,6 +71,7 @@
     <Compile Include="NPCs\NPCBehaviourVarModel.cs" />
     <Compile Include="NPCs\NPCModel.cs" />
     <Compile Include="NPCs\NPCSpawnModel.cs" />
+    <Compile Include="NPCs\NPCStatModel.cs" />
     <Compile Include="NPCs\PostgresNPCRepository.cs" />
     <Compile Include="Players\IPlayerRepository.cs" />
     <Compile Include="Players\PlayerModel.cs" />
