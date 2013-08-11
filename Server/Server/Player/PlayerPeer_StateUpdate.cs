@@ -64,6 +64,11 @@ namespace Server
 
         private void BuildAndSendWorldStateUpdate()
         {
+            if (LatestStateUpdate == null)
+            {
+                return;
+            }
+
             m_worldState.PlayerStates.Clear();
             m_worldState.PlayerIntroductions.Clear();
 
