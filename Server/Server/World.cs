@@ -33,7 +33,7 @@ namespace Server
         private IAccountRepository m_accountRepository;
         private INPCRepository m_npcRepository;
         private IPlayerRepository m_playerRepository;
-        private IStatsRepository m_statsRepository;
+        private IServerStatsRepository m_statsRepository;
 
         private NPCFactory m_npcFactory;
 
@@ -41,7 +41,7 @@ namespace Server
 
         private int m_lastWorldUpdateLength;
 
-        public World(IAccountRepository accountRepository, INPCRepository npcRepository, IPlayerRepository playerRepository, IStatsRepository statsRepository)
+        public World(IAccountRepository accountRepository, INPCRepository npcRepository, IPlayerRepository playerRepository, IServerStatsRepository statsRepository)
         {
             m_accountRepository = accountRepository;
             m_npcRepository = npcRepository;

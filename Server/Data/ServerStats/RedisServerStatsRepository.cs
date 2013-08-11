@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Data.Stats
 {
-    public class RedisStatsRepository : RedisRepository, IStatsRepository
+    public class RedisServerStatsRepository : RedisRepository, IServerStatsRepository
     {
         private const int DB_NUMBER = 1;
 
@@ -149,9 +149,9 @@ namespace Data.Stats
             set { Redis.Hashes.Set(DB_NUMBER, ZONE_UPDATE_TIMES_HASHNAME, DictionaryToRedisHash(value)); }
         }
 
-        public RedisStatsRepository() { }
+        public RedisServerStatsRepository() { }
 
-        public RedisStatsRepository(string host) : base(host) { }
+        public RedisServerStatsRepository(string host) : base(host) { }
 
         private IReadOnlyDictionary<string, long> RedisHashToDictionary(Dictionary<string, byte[]> redisDictionary)
         {

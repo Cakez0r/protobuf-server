@@ -2,7 +2,7 @@
 
 namespace Data.Stats
 {
-    public interface IStatsRepository
+    public interface IServerStatsRepository
     {
         int CPUUsage { get; set; }
 

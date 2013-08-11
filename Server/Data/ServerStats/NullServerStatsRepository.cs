@@ -2,7 +2,7 @@
 
 namespace Data.Stats
 {
-    public class NullStatsRepository : IStatsRepository
+    public class NullServerStatsRepository : IServerStatsRepository
     {
         private static readonly IReadOnlyDictionary<string, long> s_blankDictionary = new Dictionary<string, long>();
 

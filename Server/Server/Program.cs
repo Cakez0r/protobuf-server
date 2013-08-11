@@ -29,10 +29,10 @@ namespace Server
             INPCRepository npcRepository = repositoryResolver.Resolve<INPCRepository>();
             IPlayerRepository playerRepository = repositoryResolver.Resolve<IPlayerRepository>();
             IAbilityRepository abilityRepository = repositoryResolver.Resolve<IAbilityRepository>();
-            IStatsRepository statsRepository = new NullStatsRepository();
+            IServerStatsRepository statsRepository = new NullServerStatsRepository();
             try
             {
-                statsRepository = repositoryResolver.Resolve<IStatsRepository>();
+                statsRepository = repositoryResolver.Resolve<IServerStatsRepository>();
             }
             catch
             {
