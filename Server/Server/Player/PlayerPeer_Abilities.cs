@@ -18,15 +18,6 @@ namespace Server
             CurrentZone.PlayerUseAbility(this, ability.TargetID, ability.AbilityID);
         }
 
-        public float GetStatValue(int statID)
-        {
-            float value = default(float);
-
-            m_stats.TryGetValue(statID, out value);
-
-            return value;
-        }
-
         public void AcceptAbility(AbilityInstance ability)
         {
 
