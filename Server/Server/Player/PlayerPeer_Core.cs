@@ -22,8 +22,6 @@ namespace Server
         private int m_lastActivity = Environment.TickCount;
         private const int PING_TIMEOUT = 5000;
 
-        private ThreadSafeWrapper<PlayerPeer> m_accessor;
-
         public bool IsAuthenticated
         {
             get;
@@ -32,7 +30,6 @@ namespace Server
 
         public PlayerPeer(Socket socket, IAccountRepository accountRepository, INPCRepository npcRepository, IPlayerRepository playerRepository, Dictionary<int, Zone> zones) : base(socket)
         {
-            m_accessor = new ThreadSafeWrapper<PlayerPeer>(this, Fiber);
             m_accountRepository = accountRepository;
             m_playerRepository = playerRepository;
             m_zones = zones;
@@ -48,6 +45,7 @@ namespace Server
 
             m_authenticatedHandler.SetRoute<TimeSync_C2S>(Handle_TimeSync);
             m_authenticatedHandler.SetRoute<PlayerStateUpdate_C2S>(Handle_PlayerStateUpdate);
+            m_authenticatedHandler.SetRoute<UseAbility_C2S>(Handle_UseAbility);
         }
 
         public void Update()

@@ -12,33 +12,16 @@ namespace Server.NPC
         public int ID { get; private set; }
 
         public NPCModel NPCModel { get; private set; }
-        public NPCSpawnModel NPCSpawnModel { get; set; }
-        public NPCStateUpdate StateUpdate { get; set; }
+        public NPCSpawnModel NPCSpawnModel { get; private set; }
+        public NPCStateUpdate StateUpdate { get; private set; }
 
         private List<INPCBehaviour> m_behaviours;
 
         private IReadOnlyDictionary<int, float> m_stats;
 
         private Fiber m_fiber;
-        ThreadSafeWrapper<ITargetable> m_accessor;
 
-        public Vector2 Position
-        {
-            get;
-            set;
-        }
-
-        public int Health
-        {
-            get;
-            set;
-        }
-
-        public int MaxHealth
-        {
-            get;
-            set;
-        }
+        public Vector2 Position { get; set; }
 
         public NPCInstance(Fiber fiber, NPCModel npc, NPCSpawnModel npcSpawn, List<INPCBehaviour> behaviours, IReadOnlyDictionary<int, float> stats)
         {
@@ -46,8 +29,6 @@ namespace Server.NPC
             NPCSpawnModel = npcSpawn;
             m_stats = stats;
             m_fiber = fiber;
-
-            m_accessor = new ThreadSafeWrapper<ITargetable>(this, fiber);
 
             Position = new Vector2((float)npcSpawn.X, (float)npcSpawn.Y);
             ID = IDGenerator.GetNextID();
@@ -82,9 +63,9 @@ namespace Server.NPC
             return value;
         }
 
-        public Future<UseAbilityResult> RunAbilityMutation(Func<ITargetable, UseAbilityResult> mutator)
+        public void AcceptAbility(AbilityInstance ability)
         {
-            return m_accessor.Transaction<UseAbilityResult>(mutator);
+
         }
     }
 }

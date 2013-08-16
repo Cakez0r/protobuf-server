@@ -1,4 +1,5 @@
-﻿using Server.Utility;
+﻿using Data.Abilities;
+using Server.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +10,11 @@ namespace Server.Abilities
 {
     public class AbilityInstance
     {
-        private List<IAbilityBehaviour> m_behaviours = new List<IAbilityBehaviour>();
+        public AbilityModel Ability
+        {
+            get;
+            private set; 
+        }
 
         public ITargetable Source
         {
@@ -29,20 +34,12 @@ namespace Server.Abilities
             private set;
         }
 
-        public AbilityInstance(ITargetable source, ITargetable target, List<IAbilityBehaviour> behaviours)
+        public AbilityInstance(ITargetable source, ITargetable target, AbilityModel ability, Future<UseAbilityResult> resultFuture)
         {
-            m_behaviours = behaviours;
             Source = source;
             Target = target;
-            Result = new Future<UseAbilityResult>();
-        }
-
-        public void Update(TimeSpan dt)
-        {
-            foreach (IAbilityBehaviour behaviour in m_behaviours)
-            {
-                behaviour.Update(dt, this);
-            }
+            Ability = ability;
+            Result = resultFuture;
         }
     }
 }

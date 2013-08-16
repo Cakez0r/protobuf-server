@@ -67,24 +67,10 @@ namespace Server
             }
 
             s_log.Info("Precaching abilities...");
-            var abilities = abilityRepository.GetAbilities();
-
-            s_log.Info("Precaching ability behaviours...");
-            var abilityBehaviours = abilityRepository.GetAbilityBehaviours();
-            foreach (AbilityModel ability in abilities)
-            {
-                abilityRepository.GetAbilityBehavioursByAbilityID(ability.AbilityID);
-            }
-
-            s_log.Info("Precaching ability behaviour vars...");
-            abilityRepository.GetAbilityBehaviourVars();
-            foreach (AbilityBehaviourModel abilityBehaviour in abilityBehaviours)
-            {
-                abilityRepository.GetAbilityBehaviourVarsByAbilityBehaviourID(abilityBehaviour.AbilityBehaviourID);
-            }
+            abilityRepository.GetAbilities();
 
             s_log.Info("Creating world...");
-            World world = new World(accountRepository, npcRepository, playerRepository, statsRepository);
+            World world = new World(accountRepository, npcRepository, playerRepository, statsRepository, abilityRepository);
 
             s_log.Info("Initialising serializer...");
             ProtocolUtility.InitialiseSerializer();

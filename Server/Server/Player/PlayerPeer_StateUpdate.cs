@@ -22,44 +22,30 @@ namespace Server
         };
 
         private HashSet<int> m_introducedPlayers = new HashSet<int>();
-        public PlayerIntroduction Introduction
-        {
-            get;
-            private set;
-        }
+        public PlayerIntroduction Introduction { get; private set; }
 
-        public PlayerStateUpdate_S2C LatestStateUpdate
-        {
-            get;
-            private set;
-        }
+        public PlayerStateUpdate_S2C LatestStateUpdate { get; private set; }
 
         private HashSet<int> m_introducedNPCs = new HashSet<int>();
         private INPCRepository m_npcRepository;
 
-        public Vector2 Position { get; set; }
-        public Vector2 Velocity { get; set; }
-        public float Rotation { get; set; }
+        public Vector2 Position { get; private set; }
+        public Vector2 Velocity { get; private set; }
+        public float Rotation { get; private set; }
 
-        public int? TargetID { get; set; }
+        public int? TargetID { get; private set; }
 
-        public int TimeOnClient { get; set; }
+        public int TimeOnClient { get; private set; }
 
-        public Zone CurrentZone { get; set; }
-
-        public int Health { get; set; }
-        public int MaxHealth { get; set; }
+        public Zone CurrentZone { get; private set; }
 
         private void Handle_PlayerStateUpdate(PlayerStateUpdate_C2S psu)
         {
-            m_accessor.Transaction((s) =>
-            {
-                Rotation = psu.Rot;
-                Position = new Vector2(psu.X, psu.Y);
-                Velocity = new Vector2(psu.VelX, psu.VelY);
-                TimeOnClient = psu.Time;
-                TargetID = psu.TargetID;
-            });
+            Rotation = psu.Rot;
+            Position = new Vector2(psu.X, psu.Y);
+            Velocity = new Vector2(psu.VelX, psu.VelY);
+            TimeOnClient = psu.Time;
+            TargetID = psu.TargetID;
         }
 
         private void BuildAndSendWorldStateUpdate()
@@ -116,22 +102,19 @@ namespace Server
 
         private void ChangeZone(int newZoneID)
         {
-            m_accessor.Transaction((s) =>
+            if (CurrentZone == null || newZoneID != CurrentZone.ID)
             {
-                if (s.CurrentZone == null || newZoneID != s.CurrentZone.ID)
+                Zone newZone = default(Zone);
+                if (m_zones.TryGetValue(newZoneID, out newZone))
                 {
-                    Zone newZone = default(Zone);
-                    if (m_zones.TryGetValue(newZoneID, out newZone))
+                    if (CurrentZone != null)
                     {
-                        if (s.CurrentZone != null)
-                        {
-                            s.CurrentZone.RemoveFromZone(this);
-                        }
-                        newZone.AddToZone(this);
-                        s.CurrentZone = newZone;
+                        CurrentZone.RemoveFromZone(this);
                     }
+                    newZone.AddToZone(this);
+                    CurrentZone = newZone;
                 }
-            });
+            }
         }
     }
 }

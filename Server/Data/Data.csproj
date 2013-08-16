@@ -58,8 +58,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Abilities\AbilityBehaviourModel.cs" />
-    <Compile Include="Abilities\AbilityBehaviourVarModel.cs" />
     <Compile Include="Abilities\AbilityModel.cs" />
     <Compile Include="Abilities\IAbilityRepository.cs" />
     <Compile Include="Abilities\PostgresAbilityRepository.cs" />

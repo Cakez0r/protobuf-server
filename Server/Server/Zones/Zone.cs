@@ -1,6 +1,8 @@
-﻿using Data.NPCs;
+﻿using Data.Abilities;
+using Data.NPCs;
 using NLog;
 using Protocol;
+using Server.Abilities;
 using Server.NPC;
 using Server.Utility;
 using System;
@@ -18,6 +20,8 @@ namespace Server.Zones
 
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
+        private static Future<UseAbilityResult> s_failedResult = new Future<UseAbilityResult>();
+
         private Fiber m_fiber = new Fiber();
 
         private ConcurrentDictionary<int, PlayerPeer> m_playersInZone = new ConcurrentDictionary<int, PlayerPeer>();
@@ -25,12 +29,15 @@ namespace Server.Zones
         private INPCRepository m_npcRepository;
         private NPCFactory m_npcFactory;
 
+        private IAbilityRepository m_abilityRepository;
+        private Dictionary<ITargetable, AbilityInstance> m_abilities = new Dictionary<ITargetable,AbilityInstance>();
+
         public IEnumerable<PlayerPeer> PlayersInZone { get; private set; }
 
         private List<NPCSpawnModel> m_npcSpawns;
 
         private ReaderWriterLockSlim m_npcLock = new ReaderWriterLockSlim();
-        private List<NPCInstance> m_npcs = new List<NPCInstance>();
+        private Dictionary<int, NPCInstance> m_npcs = new Dictionary<int, NPCInstance>();
 
         private DateTime m_lastUpdateTime = DateTime.Now;
 
@@ -39,16 +46,22 @@ namespace Server.Zones
 
         public int ID { get; private set; }
 
-        public Zone(int zoneID, INPCRepository npcRepository, NPCFactory npcFactory)
+        public Zone(int zoneID, INPCRepository npcRepository, NPCFactory npcFactory, IAbilityRepository abilityRepository)
         {
             ID = zoneID;
 
             m_npcRepository = npcRepository;
             m_npcFactory = npcFactory;
 
+            m_abilityRepository = abilityRepository;
+
             m_npcSpawns = LoadZoneNPCSpawns();
 
-            m_npcs = m_npcSpawns.Select(npcSpawn => npcFactory.SpawnNPC(m_fiber, npcSpawn)).ToList();
+            foreach (NPCSpawnModel spawn in m_npcSpawns)
+            {
+                NPCInstance npcInstance = npcFactory.SpawnNPC(m_fiber, spawn);
+                m_npcs.Add(npcInstance.ID, npcInstance);
+            }
 
             PlayersInZone = Enumerable.Empty<PlayerPeer>();
         }
@@ -87,7 +100,7 @@ namespace Server.Zones
             TimeSpan dt = DateTime.Now - m_lastUpdateTime;
             
             m_npcLock.EnterWriteLock();
-            foreach (NPCInstance npc in m_npcs)
+            foreach (NPCInstance npc in m_npcs.Values)
             {
                 npc.Update(dt);
             }
@@ -103,7 +116,7 @@ namespace Server.Zones
             playerNPCStates.Clear();
             Vector2 playerPosition = new Vector2(player.LatestStateUpdate.X, player.LatestStateUpdate.Y);
             m_npcLock.EnterReadLock();
-            foreach (NPCInstance npc in m_npcs)
+            foreach (NPCInstance npc in m_npcs.Values)
             {
                 Vector2 npcPosition = new Vector2((float)npc.NPCSpawnModel.X, (float)npc.NPCSpawnModel.Y);
                 float distanceSqr = (playerPosition - npcPosition).LengthSquared();
@@ -113,6 +126,50 @@ namespace Server.Zones
                 }
             }
             m_npcLock.ExitReadLock();
+        }
+
+        public Future<UseAbilityResult> PlayerUseAbility(ITargetable source, int targetID, int abilityID)
+        {
+            Future<UseAbilityResult> result = s_failedResult;
+
+            AbilityModel ability = m_abilityRepository.GetAbilityByID(abilityID);
+            if (ability != null)
+            {
+                result = new Future<UseAbilityResult>();
+                m_fiber.Enqueue(() =>
+                {
+                    ITargetable target = ResolveTarget(targetID);
+                    if (target != null)
+                    {
+                        AbilityInstance abilityInstance = new AbilityInstance(source, target, ability, result);
+                        m_abilities.Add(source, abilityInstance);
+                    }
+                    else
+                    {
+                        result.SetResult(UseAbilityResult.Failed);
+                    }
+                });
+            }
+
+            return result;
+        }
+
+        private ITargetable ResolveTarget(int id)
+        {
+            PlayerPeer player = default(PlayerPeer);
+            NPCInstance npc = default(NPCInstance);
+            ITargetable target = default(ITargetable);
+
+            if (m_playersInZone.TryGetValue(id, out player))
+            {
+                target = (ITargetable)player;
+            }
+            else if (m_npcs.TryGetValue(id, out npc))
+            {
+                target = (ITargetable)npc;
+            }
+
+            return target;
         }
     }
 }

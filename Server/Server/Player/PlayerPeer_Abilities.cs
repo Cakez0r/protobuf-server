@@ -1,4 +1,5 @@
-﻿using Server.Abilities;
+﻿using Protocol;
+using Server.Abilities;
 using Server.Utility;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,12 @@ namespace Server
 {
     public partial class PlayerPeer
     {
-        IReadOnlyDictionary<int, float> m_stats;
+        private IReadOnlyDictionary<int, float> m_stats;
+
+        private void Handle_UseAbility(UseAbility_C2S ability)
+        {
+            CurrentZone.PlayerUseAbility(this, ability.TargetID, ability.AbilityID);
+        }
 
         public float GetStatValue(int statID)
         {
@@ -21,9 +27,9 @@ namespace Server
             return value;
         }
 
-        public Future<UseAbilityResult> RunAbilityMutation(Func<ITargetable, UseAbilityResult> mutator)
+        public void AcceptAbility(AbilityInstance ability)
         {
-            return m_accessor.Transaction<UseAbilityResult>(mutator);
+
         }
     }
 }

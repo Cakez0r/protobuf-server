@@ -1,4 +1,5 @@
-﻿using Data.Accounts;
+﻿using Data.Abilities;
+using Data.Accounts;
 using Data.NPCs;
 using Data.Players;
 using Data.Stats;
@@ -34,6 +35,7 @@ namespace Server
         private INPCRepository m_npcRepository;
         private IPlayerRepository m_playerRepository;
         private IServerStatsRepository m_statsRepository;
+        private IAbilityRepository m_abilityRepository;
 
         private NPCFactory m_npcFactory;
 
@@ -41,16 +43,17 @@ namespace Server
 
         private int m_lastWorldUpdateLength;
 
-        public World(IAccountRepository accountRepository, INPCRepository npcRepository, IPlayerRepository playerRepository, IServerStatsRepository statsRepository)
+        public World(IAccountRepository accountRepository, INPCRepository npcRepository, IPlayerRepository playerRepository, IServerStatsRepository statsRepository, IAbilityRepository abilityRepository)
         {
             m_accountRepository = accountRepository;
             m_npcRepository = npcRepository;
             m_playerRepository = playerRepository;
             m_statsRepository = statsRepository;
+            m_abilityRepository = abilityRepository;
 
             m_npcFactory = new NPCFactory(npcRepository);
 
-            m_zones = BuildZones(m_npcRepository);
+            m_zones = BuildZones(m_npcRepository, m_abilityRepository);
 
             m_worldUpdateThread = new Thread(WorldUpdate);
             m_worldUpdateThread.Start();
@@ -167,11 +170,11 @@ namespace Server
             }
         }
 
-        private Dictionary<int, Zone> BuildZones(INPCRepository npcRepository)
+        private Dictionary<int, Zone> BuildZones(INPCRepository npcRepository, IAbilityRepository abilityRepository)
         {
             Dictionary<int, Zone> zones = new Dictionary<int, Zone>();
-            zones.Add(0, new Zone(0, m_npcRepository, m_npcFactory));
-            zones.Add(1, new Zone(1, m_npcRepository, m_npcFactory));
+            zones.Add(0, new Zone(0, m_npcRepository, m_npcFactory, abilityRepository));
+            zones.Add(1, new Zone(1, m_npcRepository, m_npcFactory, abilityRepository));
             return zones;
         }
     }
