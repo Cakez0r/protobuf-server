@@ -44,12 +44,15 @@ namespace Server.NPC
         {
             s_log.Info("Loading NPC Behaviour Types...");
             m_behaviourTypes = new Dictionary<int, Type>();
-            Dictionary<string, Type> allAssemblyTypes = Assembly.GetCallingAssembly().GetTypes().ToDictionary(t => t.Name);
+            Dictionary<string, Type> npcBehaviourTypes = Assembly.GetCallingAssembly().GetTypes()
+                .Where(t => t.GetInterfaces().Contains(typeof(INPCBehaviour)))
+                .ToDictionary(t => t.Name);
+
             foreach (NPCBehaviourModel behaviourModel in m_npcRepository.GetNPCBehaviours())
             {
                 Type behaviourType = default(Type);
 
-                if (allAssemblyTypes.TryGetValue(behaviourModel.NPCBehaviourType, out behaviourType))
+                if (npcBehaviourTypes.TryGetValue(behaviourModel.NPCBehaviourType, out behaviourType))
                 {
                     m_behaviourTypes.Add(behaviourModel.NPCBehaviourID, behaviourType);
                 }

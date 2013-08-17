@@ -51,11 +51,6 @@ namespace Server
         }
 
         #region Stats
-        public int WorkQueueLength
-        {
-            get { return m_fiber.WorkQueueLength; }
-        }
-
         private static long s_totalBytesIn;
         public static long TotalBytesIn
         {
@@ -101,7 +96,6 @@ namespace Server
                 s_log.Debug("[{0}] Disconnecting", ID);
                 m_socket.Disconnect(false);
             }
-            m_fiber.Stop();
         }
 
         public void Respond(Packet p, Packet response)
@@ -263,7 +257,6 @@ namespace Server
 
         public virtual void Dispose()
         {
-            m_fiber.Stop();
             m_socket.Dispose();
             byte[] buffer = default(byte[]);
             while (m_bufferPool.TryPop(out buffer))

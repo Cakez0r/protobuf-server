@@ -2,9 +2,9 @@
 using Data.Players;
 using Protocol;
 using System;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Linq;
 
 namespace Server
 {
