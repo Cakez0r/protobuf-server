@@ -1,6 +1,7 @@
 ﻿using Protocol;
 using Server.Abilities;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Server
 {
@@ -8,14 +9,26 @@ namespace Server
     {
         private IReadOnlyDictionary<int, float> m_stats;
 
-        private void Handle_UseAbility(UseAbility_C2S ability)
+        private async void Handle_UseAbility(UseAbility_C2S ability)
         {
-            CurrentZone.PlayerUseAbility(this, ability.TargetID, ability.AbilityID);
+            UseAbilityResult result = await CurrentZone.PlayerUseAbility(this, ability.TargetID, ability.AbilityID);
+            await Fiber.Enqueue(() => Respond(ability, new UseAbility_S2C() { Result = (int)result }));
         }
 
-        public void AcceptAbility(AbilityInstance ability)
+        public Task<UseAbilityResult> AcceptAbilityAsSource(AbilityInstance ability)
         {
+            return Fiber.Enqueue(() =>
+            {
+                return UseAbilityResult.OK;
+            });
+        }
 
+        public Task<UseAbilityResult> AcceptAbilityAsTarget(AbilityInstance ability)
+        {
+            return Fiber.Enqueue(() =>
+            {
+                return UseAbilityResult.OK;
+            });
         }
     }
 }

@@ -81,7 +81,6 @@
     <Compile Include="Player\PlayerPeer_Core.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Utility\Future.cs" />
     <Compile Include="Utility\IDGenerator.cs" />
     <Compile Include="Utility\MathHelper.cs" />
     <Compile Include="Utility\ObjectRouter.cs" />

@@ -1,5 +1,4 @@
 ﻿using Data.Abilities;
-using Server.Utility;
 
 namespace Server.Abilities
 {
@@ -23,18 +22,11 @@ namespace Server.Abilities
             private set;
         }
 
-        public Future<UseAbilityResult> Result
-        {
-            get;
-            private set;
-        }
-
-        public AbilityInstance(ITargetable source, ITargetable target, AbilityModel ability, Future<UseAbilityResult> resultFuture)
+        public AbilityInstance(ITargetable source, ITargetable target, AbilityModel ability)
         {
             Source = source;
             Target = target;
             Ability = ability;
-            Result = resultFuture;
         }
     }
 }

@@ -4,6 +4,7 @@ using Server.Abilities;
 using Server.Utility;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Server.NPC
 {
@@ -54,9 +55,20 @@ namespace Server.NPC
             StateUpdate.Y = Position.Y;
         }
 
-        public void AcceptAbility(AbilityInstance ability)
+        public Task<UseAbilityResult> AcceptAbilityAsSource(AbilityInstance ability)
         {
+            return m_fiber.Enqueue(() =>
+            {
+                return UseAbilityResult.OK;
+            });
+        }
 
+        public Task<UseAbilityResult> AcceptAbilityAsTarget(AbilityInstance ability)
+        {
+            return m_fiber.Enqueue(() =>
+            {
+                return UseAbilityResult.OK;
+            });
         }
     }
 }

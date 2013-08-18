@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Server.Zones
 {
@@ -20,8 +21,6 @@ namespace Server.Zones
 
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
-        private static Future<UseAbilityResult> s_failedResult = new Future<UseAbilityResult>();
-
         private Fiber m_fiber = new Fiber();
 
         private ConcurrentDictionary<int, PlayerPeer> m_playersInZone = new ConcurrentDictionary<int, PlayerPeer>();
@@ -30,7 +29,7 @@ namespace Server.Zones
         private NPCFactory m_npcFactory;
 
         private IAbilityRepository m_abilityRepository;
-        private Dictionary<ITargetable, AbilityInstance> m_abilities = new Dictionary<ITargetable,AbilityInstance>();
+        private Dictionary<ITargetable, AbilityInstance> m_activeAbilities = new Dictionary<ITargetable,AbilityInstance>();
 
         public IEnumerable<PlayerPeer> PlayersInZone { get; private set; }
 
@@ -106,9 +105,24 @@ namespace Server.Zones
             }
             m_npcLock.ExitWriteLock();
 
+            foreach (var ability in m_activeAbilities)
+            {
+                m_fiber.Enqueue(() => FireAbility(ability.Value), false);
+            }
+            m_activeAbilities.Clear();
+
             m_lastUpdateTime = DateTime.Now;
             m_zoneUpdateTimer.Stop();
             LastUpdateLength = m_zoneUpdateTimer.ElapsedMilliseconds;
+        }
+
+        private async void FireAbility(AbilityInstance ability)
+        {
+            UseAbilityResult sourceResult = await ability.Source.AcceptAbilityAsSource(ability);
+            if (ability.Target != null && sourceResult == UseAbilityResult.OK)
+            {
+                await ability.Target.AcceptAbilityAsTarget(ability);
+            }
         }
 
         public void GatherNPCStatesForPlayer(PlayerPeer player, List<NPCStateUpdate> playerNPCStates)
@@ -128,30 +142,28 @@ namespace Server.Zones
             m_npcLock.ExitReadLock();
         }
 
-        public Future<UseAbilityResult> PlayerUseAbility(ITargetable source, int targetID, int abilityID)
+        public Task<UseAbilityResult> PlayerUseAbility(ITargetable source, int targetID, int abilityID)
         {
-            Future<UseAbilityResult> result = s_failedResult;
-
             AbilityModel ability = m_abilityRepository.GetAbilityByID(abilityID);
             if (ability != null)
             {
-                result = new Future<UseAbilityResult>();
-                m_fiber.Enqueue(() =>
+                return m_fiber.Enqueue(() =>
                 {
                     ITargetable target = ResolveTarget(targetID);
-                    if (target != null)
-                    {
-                        AbilityInstance abilityInstance = new AbilityInstance(source, target, ability, result);
-                        m_abilities.Add(source, abilityInstance);
+
+                    if (!m_activeAbilities.ContainsKey(source))
+                    { 
+                        AbilityInstance abilityInstance = new AbilityInstance(source, target, ability);
+                        m_activeAbilities.Add(source, abilityInstance);
+
+                        return UseAbilityResult.OK;
                     }
-                    else
-                    {
-                        result.SetResult(UseAbilityResult.Failed);
-                    }
+
+                    return UseAbilityResult.Failed;
                 });
             }
 
-            return result;
+            return Task.FromResult(UseAbilityResult.Failed);
         }
 
         private ITargetable ResolveTarget(int id)
