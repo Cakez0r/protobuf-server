@@ -1,4 +1,5 @@
-﻿using Data.Accounts;
+﻿using Data.Abilities;
+using Data.Accounts;
 using Data.NPCs;
 using Data.Players;
 using NLog;
@@ -30,12 +31,13 @@ namespace Server
             private set;
         }
 
-        public PlayerPeer(Socket socket, IAccountRepository accountRepository, INPCRepository npcRepository, IPlayerRepository playerRepository, Dictionary<int, Zone> zones) : base(socket)
+        public PlayerPeer(Socket socket, IAccountRepository accountRepository, INPCRepository npcRepository, IPlayerRepository playerRepository, IAbilityRepository abilityRepository, Dictionary<int, Zone> zones) : base(socket)
         {
             m_accountRepository = accountRepository;
             m_playerRepository = playerRepository;
-            m_zones = zones;
             m_npcRepository = npcRepository;
+            m_abilityRepository = abilityRepository;
+            m_zones = zones;
 
             InitialiseRoutes();
 

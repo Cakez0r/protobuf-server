@@ -29,9 +29,6 @@ namespace Server.Zones
         private INPCRepository m_npcRepository;
         private NPCFactory m_npcFactory;
 
-        private IAbilityRepository m_abilityRepository;
-        private Dictionary<ITargetable, AbilityInstance> m_activeAbilities = new Dictionary<ITargetable,AbilityInstance>();
-
         public IEnumerable<PlayerPeer> PlayersInZone { get; private set; }
 
         private List<NPCSpawnModel> m_npcSpawns;
@@ -46,14 +43,12 @@ namespace Server.Zones
 
         public int ID { get; private set; }
 
-        public Zone(int zoneID, INPCRepository npcRepository, NPCFactory npcFactory, IAbilityRepository abilityRepository)
+        public Zone(int zoneID, INPCRepository npcRepository, NPCFactory npcFactory)
         {
             ID = zoneID;
 
             m_npcRepository = npcRepository;
             m_npcFactory = npcFactory;
-
-            m_abilityRepository = abilityRepository;
 
             m_npcSpawns = LoadZoneNPCSpawns();
 
@@ -103,12 +98,6 @@ namespace Server.Zones
             }
             m_npcLock.ExitWriteLock();
 
-            foreach (var ability in m_activeAbilities)
-            {
-                m_fiber.Enqueue(() => FireAbility(ability.Value), false);
-            }
-            m_activeAbilities.Clear();
-
             m_lastUpdateTime = DateTime.Now;
             m_zoneUpdateTimer.Stop();
             LastUpdateLength = m_zoneUpdateTimer.ElapsedMilliseconds;
@@ -123,15 +112,6 @@ namespace Server.Zones
             {
                 s_log.Warn("Zone {0} update ran into overtime by {1}ms", ID, Math.Abs(restTime));
                 m_fiber.Enqueue(Update);
-            }
-        }
-
-        private async void FireAbility(AbilityInstance ability)
-        {
-            UseAbilityResult sourceResult = await ability.Source.AcceptAbilityAsSource(ability);
-            if (ability.Target != null && sourceResult == UseAbilityResult.OK)
-            {
-                await ability.Target.AcceptAbilityAsTarget(ability);
             }
         }
 
@@ -152,46 +132,30 @@ namespace Server.Zones
             m_npcLock.ExitReadLock();
         }
 
-        public Task<UseAbilityResult> PlayerUseAbility(ITargetable source, int targetID, int abilityID)
+        public void PlayerUsedAbility(AbilityInstance ability)
         {
-            AbilityModel ability = m_abilityRepository.GetAbilityByID(abilityID);
-            if (ability != null)
-            {
-                return m_fiber.Enqueue(() =>
-                {
-                    ITargetable target = ResolveTarget(targetID);
 
-                    if (!m_activeAbilities.ContainsKey(source))
-                    { 
-                        AbilityInstance abilityInstance = new AbilityInstance(source, target, ability);
-                        m_activeAbilities.Add(source, abilityInstance);
-
-                        return UseAbilityResult.OK;
-                    }
-
-                    return UseAbilityResult.Failed;
-                });
-            }
-
-            return Task.FromResult(UseAbilityResult.Failed);
         }
 
-        private ITargetable ResolveTarget(int id)
+        public Task<ITargetable> GetTarget(int id)
         {
-            PlayerPeer player = default(PlayerPeer);
-            NPCInstance npc = default(NPCInstance);
-            ITargetable target = default(ITargetable);
-
-            if (m_playersInZone.TryGetValue(id, out player))
+            return m_fiber.Enqueue(() =>
             {
-                target = (ITargetable)player;
-            }
-            else if (m_npcs.TryGetValue(id, out npc))
-            {
-                target = (ITargetable)npc;
-            }
+                PlayerPeer player = default(PlayerPeer);
+                NPCInstance npc = default(NPCInstance);
+                ITargetable target = default(ITargetable);
 
-            return target;
+                if (m_playersInZone.TryGetValue(id, out player))
+                {
+                    target = (ITargetable)player;
+                }
+                else if (m_npcs.TryGetValue(id, out npc))
+                {
+                    target = (ITargetable)npc;
+                }
+
+                return target;
+            });
         }
     }
 }

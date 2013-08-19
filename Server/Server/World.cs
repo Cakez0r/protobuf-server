@@ -58,7 +58,7 @@ namespace Server
 
             m_npcFactory = new NPCFactory(npcRepository);
 
-            m_zones = BuildZones(m_npcRepository, m_abilityRepository);
+            m_zones = BuildZones(m_npcRepository);
 
             cpuCounter.CategoryName = "Processor";
             cpuCounter.CounterName = "% Processor Time";
@@ -72,7 +72,7 @@ namespace Server
         {
             sock.NoDelay = true;
 
-            PlayerPeer p = new PlayerPeer(sock, m_accountRepository, m_npcRepository, m_playerRepository, m_zones);
+            PlayerPeer p = new PlayerPeer(sock, m_accountRepository, m_npcRepository, m_playerRepository, m_abilityRepository, m_zones);
 
             //NOTE: Code here will block the AcceptSocket loop, so make sure it stays lean
             m_players[p.ID] = p;
@@ -143,11 +143,11 @@ namespace Server
             m_fiber.Schedule(StatsUpdate, TimeSpan.FromMilliseconds(STATS_UPDATE_INTERVAL_MS), false);
         }
 
-        private Dictionary<int, Zone> BuildZones(INPCRepository npcRepository, IAbilityRepository abilityRepository)
+        private Dictionary<int, Zone> BuildZones(INPCRepository npcRepository)
         {
             Dictionary<int, Zone> zones = new Dictionary<int, Zone>();
-            zones.Add(0, new Zone(0, m_npcRepository, m_npcFactory, abilityRepository));
-            zones.Add(1, new Zone(1, m_npcRepository, m_npcFactory, abilityRepository));
+            zones.Add(0, new Zone(0, m_npcRepository, m_npcFactory));
+            zones.Add(1, new Zone(1, m_npcRepository, m_npcFactory));
             return zones;
         }
     }
