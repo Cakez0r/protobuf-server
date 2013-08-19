@@ -52,6 +52,7 @@ namespace Server
             m_authenticatedHandler.SetRoute<TimeSync_C2S>(Handle_TimeSync);
             m_authenticatedHandler.SetRoute<PlayerStateUpdate_C2S>(Handle_PlayerStateUpdate);
             m_authenticatedHandler.SetRoute<UseAbility_C2S>(Handle_UseAbility);
+            m_authenticatedHandler.SetRoute<StopCasting>(Handle_StopCasting);
         }
 
         private void Update()
@@ -59,8 +60,10 @@ namespace Server
             LatestStateUpdate = new PlayerStateUpdate_S2C()
             {
                 PlayerID = ID,
-                CurrentHP = 0,
-                MaxHP = 0,
+                Health = Health,
+                MaxHealth = MaxHealth,
+                Power = Power,
+                MaxPower = MaxPower,
                 Rot = Rotation,
                 TargetID = TargetID,
                 Time = TimeOnClient,
@@ -92,7 +95,7 @@ namespace Server
 
             if (!handled)
             {
-                s_log.Warn("Failed to handle packet of type {0}. Authenticated: {1}", packet.GetType(), IsAuthenticated);
+                Warn("Failed to handle packet of type {0}", packet.GetType());
                 Disconnect();
             }
 
@@ -110,7 +113,7 @@ namespace Server
             }
             catch (Exception ex)
             {
-                s_log.Warn("Failed to dispose player: {0}", ex);
+                Warn("Failed to dispose player: {0}", ex);
             }
 
             base.Dispose();
@@ -118,8 +121,25 @@ namespace Server
 
         private void Handle_TimeSync(TimeSync_C2S sync)
         {
-            s_log.Trace("Time sync request from ID {0}", ID);
             Respond(sync, new TimeSync_S2C() { Time = Environment.TickCount });
+        }
+
+        private const string LOG_FORMAT = "[{0}] {1}: {2}";
+        private void Trace(string message, params object[] args)
+        {
+            s_log.Trace(string.Format(LOG_FORMAT, ID, m_player != null ? m_player.Name : "UNAUTHENTICATED", string.Format(message, args)));
+        }
+        private void Info(string message, params object[] args)
+        {
+            s_log.Info(string.Format(LOG_FORMAT, ID, m_player != null ? m_player.Name : "UNAUTHENTICATED", string.Format(message, args)));
+        }
+        private void Warn(string message, params object[] args)
+        {
+            s_log.Warn(string.Format(LOG_FORMAT, ID, m_player != null ? m_player.Name : "UNAUTHENTICATED", string.Format(message, args)));
+        }
+        private void Error(string message, params object[] args)
+        {
+            s_log.Error(string.Format(LOG_FORMAT, ID, m_player != null ? m_player.Name : "UNAUTHENTICATED", string.Format(message, args)));
         }
     }
 }

@@ -33,6 +33,12 @@ namespace Server
         public Vector2 Velocity { get; private set; }
         public float Rotation { get; private set; }
 
+        public int Health { get; private set; }
+        public int MaxHealth { get; private set; }
+
+        public int Power { get; private set; }
+        public int MaxPower { get; private set; }
+
         public int? TargetID { get; private set; }
 
         public int TimeOnClient { get; private set; }
@@ -59,6 +65,10 @@ namespace Server
             m_worldState.PlayerIntroductions.Clear();
 
             m_worldState.CurrentServerTime = Environment.TickCount;
+            m_worldState.Health = Health;
+            m_worldState.MaxHealth = MaxHealth;
+            m_worldState.Power = Power;
+            m_worldState.MaxPower = MaxPower;
 
             foreach (PlayerPeer player in CurrentZone.PlayersInZone)
             {

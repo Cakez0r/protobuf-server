@@ -28,10 +28,15 @@ namespace Server
                 if (player != null)
                 {
                     m_player = player;
+                    MaxHealth = 1000;
+                    MaxPower = 1000;
+                    Health = (int)(MaxHealth * m_player.Health);
+                    Power = (int)(MaxPower * m_player.Power);
+
                     m_stats = m_playerRepository.GetPlayerStatsByPlayerID(player.PlayerID).ToDictionary(stat => stat.StatID, stat => stat.StatValue);
 
                     Introduction = new PlayerIntroduction() { PlayerID = ID, Name = player.Name };
-                    s_log.Info("[{0}] Authenticated as {1}", ID, account.Username);
+                    Info("Logged in");
                     result = AuthenticationAttempt_S2C.ResponseCode.OK;
 
                     ChangeZone(0);
@@ -41,13 +46,13 @@ namespace Server
                 else
                 {
                     result = AuthenticationAttempt_S2C.ResponseCode.Error;
-                    s_log.Info("[{0}] Username: {1} has no characters but tried to log in.", ID, aa.Username);
+                    Info("Username: {1} has no characters but tried to log in.", aa.Username);
                 }
             }
             else
             {
                 result = AuthenticationAttempt_S2C.ResponseCode.BadLogin;
-                s_log.Info("[{0}] Login failed with username: {1} and password: {2}", ID, aa.Username, aa.Password);
+                Info("Login failed with username: {1} and password: {2}", ID, aa.Username, aa.Password);
             }
 
             Respond(aa, new AuthenticationAttempt_S2C() { PlayerID = ID, Result = result });

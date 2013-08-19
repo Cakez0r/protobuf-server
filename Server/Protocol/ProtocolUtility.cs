@@ -10,7 +10,7 @@ namespace Protocol
     public static class ProtocolUtility
     {
         private static Dictionary<Type, int> m_typeToCode = new Dictionary<Type, int>();
-        private static Dictionary<int, Type> m_codeToType = new Dictionary<int,Type>();
+        private static Dictionary<int, Type> m_codeToType = new Dictionary<int, Type>();
 
         private static bool m_isInitialised = false;
 

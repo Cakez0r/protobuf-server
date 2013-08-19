@@ -9,6 +9,7 @@ namespace Server.Abilities
         Accepted = 2,
         NotEnoughPower = 3,
         InvalidTarget = 4,
-        OnCooldown = 5
+        OnCooldown = 5,
+        OutOfRange = 6
     }
 }

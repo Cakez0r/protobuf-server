@@ -46,10 +46,10 @@ namespace Protocol
         public int? TargetID { get; set; }
 
         [ProtoMember(6)]
-        public int CurrentHP { get; set; }
+        public int Health { get; set; }
 
         [ProtoMember(7)]
-        public int MaxHP { get; set; }
+        public int MaxHealth { get; set; }
 
         [ProtoMember(8)]
         public int Time { get; set; }
@@ -59,5 +59,11 @@ namespace Protocol
 
         [ProtoMember(10)]
         public float VelY { get; set; }
+
+        [ProtoMember(11)]
+        public int Power { get; set; }
+
+        [ProtoMember(12)]
+        public int MaxPower { get; set; }
     }
 }

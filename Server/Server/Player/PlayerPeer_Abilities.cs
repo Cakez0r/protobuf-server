@@ -1,6 +1,7 @@
 ﻿using Data.Abilities;
 using Protocol;
 using Server.Abilities;
+using Server.Utility;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -23,13 +24,16 @@ namespace Server
             AbilityModel abilityModel = m_abilityRepository.GetAbilityByID(ability.AbilityID);
             UseAbilityResult result = UseAbilityResult.Failed;
 
+            Trace("Use ability ID {0}", ability.AbilityID);
+
             //If not already casting and ability is valid
-            if (m_spellCastCancellationToken != null && abilityModel != null)
+            if (m_spellCastCancellationToken == null && abilityModel != null)
             {
                 //Not on global cooldown
                 if (DateTime.Now - m_lastAbilityAcceptTime > m_globalCooldown)
                 {
                     m_lastAbilityAcceptTime = DateTime.Now;
+                    result = UseAbilityResult.Accepted;
 
                     //Send response and create cancellation token if ability has a cast time
                     if (abilityModel.CastTimeMS > 0)
@@ -78,17 +82,46 @@ namespace Server
             m_spellCastCancellationToken = null;
         }
 
+        private void Handle_StopCasting(StopCasting sc)
+        {
+            if (m_spellCastCancellationToken != null)
+            {
+                m_spellCastCancellationToken.Cancel();
+                m_spellCastCancellationToken = null;
+            }
+        }
+
         public UseAbilityResult AcceptAbilityAsSource(AbilityInstance ability)
         {
+            s_log.Trace("Accepting ability as source");
             CurrentZone.PlayerUsedAbility(ability);
-            return UseAbilityResult.Completed;
+
+            UseAbilityResult result = UseAbilityResult.Completed;
+
+            int newHealth = Health + ability.Ability.SourceHealthDelta;
+            int newPower = Power + ability.Ability.SourcePowerDelta;
+
+            Health = MathHelper.Clamp(newHealth, 0, MaxHealth);
+            Power = MathHelper.Clamp(newPower, 0, MaxPower);
+
+            return result;
         }
 
         public Task<UseAbilityResult> AcceptAbilityAsTarget(AbilityInstance ability)
         {
             return Fiber.Enqueue(() =>
             {
-                return UseAbilityResult.Completed;
+                s_log.Trace("Accepting ability as target");
+
+                UseAbilityResult result = UseAbilityResult.Completed;
+
+                int newHealth = Health + ability.Ability.TargetHealthDelta;
+                int newPower = Power + ability.Ability.TargetPowerDelta;
+
+                Health = MathHelper.Clamp(newHealth, 0, MaxHealth);
+                Power = MathHelper.Clamp(newPower, 0, MaxPower);
+
+                return result;
             });
         }
     }
