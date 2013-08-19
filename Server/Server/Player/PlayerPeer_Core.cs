@@ -14,6 +14,8 @@ namespace Server
 {
     public partial class PlayerPeer : NetPeer, ITargetable
     {
+        private const int TARGET_UPDATE_TIME_MS = 50;
+
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
         private ObjectRouter m_unauthenticatedHandler = new ObjectRouter();
@@ -36,6 +38,8 @@ namespace Server
             m_npcRepository = npcRepository;
 
             InitialiseRoutes();
+
+            Fiber.Enqueue(Update);
         }
 
         private void InitialiseRoutes()
@@ -48,12 +52,7 @@ namespace Server
             m_authenticatedHandler.SetRoute<UseAbility_C2S>(Handle_UseAbility);
         }
 
-        public void Update()
-        {
-            Fiber.Enqueue(InternalUpdate);
-        }
-
-        private void InternalUpdate()
+        private void Update()
         {
             LatestStateUpdate = new PlayerStateUpdate_S2C()
             {
@@ -79,6 +78,8 @@ namespace Server
                 Send(new Ping());
                 m_lastActivity = Environment.TickCount;
             }
+
+            Fiber.Schedule(Update, TimeSpan.FromMilliseconds(TARGET_UPDATE_TIME_MS));
         }
 
         protected override void DispatchPacket(Packet packet)

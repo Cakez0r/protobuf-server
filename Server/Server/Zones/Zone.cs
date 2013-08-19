@@ -17,6 +17,7 @@ namespace Server.Zones
 {
     public class Zone
     {
+        private const int TARGET_UPDATE_TIME_MS = 50;
         private const float RELEVANCE_DISTANCE_SQR = 40 * 40;
 
         private static Logger s_log = LogManager.GetCurrentClassLogger();
@@ -63,6 +64,8 @@ namespace Server.Zones
             }
 
             PlayersInZone = Enumerable.Empty<PlayerPeer>();
+
+            m_fiber.Enqueue(Update);
         }
 
         private List<NPCSpawnModel> LoadZoneNPCSpawns()
@@ -88,12 +91,7 @@ namespace Server.Zones
             }
         }
 
-        public void Update()
-        {
-            m_fiber.Enqueue(InternalUpdate);
-        }
-
-        private void InternalUpdate()
+        private void Update()
         {
             m_zoneUpdateTimer.Restart();
             TimeSpan dt = DateTime.Now - m_lastUpdateTime;
@@ -114,6 +112,18 @@ namespace Server.Zones
             m_lastUpdateTime = DateTime.Now;
             m_zoneUpdateTimer.Stop();
             LastUpdateLength = m_zoneUpdateTimer.ElapsedMilliseconds;
+
+            int restTime = TARGET_UPDATE_TIME_MS - (int)LastUpdateLength;
+
+            if (restTime >= 0)
+            {
+                m_fiber.Schedule(Update, TimeSpan.FromMilliseconds(restTime));
+            }
+            else
+            {
+                s_log.Warn("Zone {0} update ran into overtime by {1}ms", ID, Math.Abs(restTime));
+                m_fiber.Enqueue(Update);
+            }
         }
 
         private async void FireAbility(AbilityInstance ability)

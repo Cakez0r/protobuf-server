@@ -5,6 +5,7 @@ using Data.Players;
 using Data.Stats;
 using NLog;
 using Server.NPC;
+using Server.Utility;
 using Server.Zones;
 using System;
 using System.Collections.Concurrent;
@@ -26,10 +27,7 @@ namespace Server
 
         private ConcurrentDictionary<int, PlayerPeer> m_players = new ConcurrentDictionary<int, PlayerPeer>();
 
-        private Thread m_worldUpdateThread;
-        private DateTime m_lastUpdateTime;
-
-        private Thread m_statsThread;
+        private Fiber m_fiber = new Fiber();
 
         private IAccountRepository m_accountRepository;
         private INPCRepository m_npcRepository;
@@ -43,6 +41,13 @@ namespace Server
 
         private int m_lastWorldUpdateLength;
 
+        PerformanceCounter cpuCounter = new PerformanceCounter();
+
+        private long m_lastBytesIn = 0;
+        private long m_lastBytesOut = 0;
+        private long m_lastPacketsIn = 0;
+        private long m_lastPacketsOut = 0;
+
         public World(IAccountRepository accountRepository, INPCRepository npcRepository, IPlayerRepository playerRepository, IServerStatsRepository statsRepository, IAbilityRepository abilityRepository)
         {
             m_accountRepository = accountRepository;
@@ -55,11 +60,12 @@ namespace Server
 
             m_zones = BuildZones(m_npcRepository, m_abilityRepository);
 
-            m_worldUpdateThread = new Thread(WorldUpdate);
-            m_worldUpdateThread.Start();
+            cpuCounter.CategoryName = "Processor";
+            cpuCounter.CounterName = "% Processor Time";
+            cpuCounter.InstanceName = "_Total";
 
-            m_statsThread = new Thread(StatsUpdate);
-            m_statsThread.Start();
+            m_fiber.Enqueue(Update, false);
+            m_fiber.Enqueue(StatsUpdate, false);
         }
 
         public void AcceptSocket(Socket sock)
@@ -74,100 +80,67 @@ namespace Server
             s_log.Info("[{0}] connected", p.ID);
         }
 
-        private void WorldUpdate()
+        private void Update()
         {
-            s_log.Info("World update thread started");
-
-            m_lastUpdateTime = DateTime.Now;
-            Stopwatch updateTimer = new Stopwatch();
-            while (true)
+            Stopwatch updateTimer = Stopwatch.StartNew();
+            Parallel.ForEach(m_players, kvp =>
             {
-                updateTimer.Restart();
-                foreach (Zone zone in m_zones.Values)
+                PlayerPeer player = kvp.Value;
+                if (!player.IsConnected)
                 {
-                    zone.Update();
+                    s_log.Info("[{0}] is disconnected and will be removed", player.ID);
+                    player.Dispose();
+                    PlayerPeer removedPlayer = default(PlayerPeer);
+                    m_players.TryRemove(kvp.Key, out removedPlayer);
                 }
+            });
+            updateTimer.Stop();
 
-                Parallel.ForEach(m_players, kvp =>
-                {
-                    PlayerPeer player = kvp.Value;
-                    if (player.IsConnected)
-                    {
-                        //This schedules an update on the player's fiber - does not run synchronously
-                        player.Update();
-                    }
-                    else
-                    {
-                        s_log.Info("[{0}] is disconnected and will be removed", player.ID);
-                        player.Dispose();
-                        PlayerPeer removedPlayer = default(PlayerPeer);
-                        m_players.TryRemove(kvp.Key, out removedPlayer);
-                    }
-                });
-                updateTimer.Stop();
+            m_lastWorldUpdateLength = (int)updateTimer.ElapsedMilliseconds;
+            int restTime = TARGET_UPDATE_TIME_MS - m_lastWorldUpdateLength;
 
-                m_lastWorldUpdateLength = (int)updateTimer.ElapsedMilliseconds;
-                int restTime = TARGET_UPDATE_TIME_MS - m_lastWorldUpdateLength;
-
-                if (restTime < 0)
-                {
-                    s_log.Warn("World update ran into overtime by {0}ms", Math.Abs(restTime));
-                    restTime = 0;
-                }
-
-                m_lastUpdateTime = DateTime.Now;
-
-                Thread.Sleep(restTime);
+            if (restTime >= 0)
+            {
+                m_fiber.Schedule(Update, TimeSpan.FromMilliseconds(restTime), false);
+            }
+            else
+            {
+                s_log.Warn("World update ran into overtime by {0}ms", Math.Abs(restTime));
+                m_fiber.Enqueue(Update, false);
             }
         }
 
         private void StatsUpdate()
         {
-            PerformanceCounter cpuCounter;
+            m_statsRepository.CPUUsage = (int)cpuCounter.NextValue();
 
-            cpuCounter = new PerformanceCounter();
+            long bytesIn = NetPeer.TotalBytesIn;
+            long bytesOut = NetPeer.TotalBytesOut;
+            long packetsIn = NetPeer.TotalPacketsIn;
+            long packetsOut = NetPeer.TotalPacketsOut;
 
-            cpuCounter.CategoryName = "Processor";
-            cpuCounter.CounterName = "% Processor Time";
-            cpuCounter.InstanceName = "_Total";
+            m_statsRepository.TotalBytesIn = bytesIn;
+            m_statsRepository.TotalBytesOut = bytesOut;
+            m_statsRepository.TotalPacketsIn = packetsIn;
+            m_statsRepository.TotalPacketsOut = packetsOut;
 
-            long lastBytesIn = 0;
-            long lastBytesOut = 0;
-            long lastPacketsIn = 0;
-            long lastPacketsOut = 0;
+            m_statsRepository.BytesInPerSecond = bytesIn - m_lastBytesIn;
+            m_statsRepository.BytesOutPerSecond = bytesOut - m_lastBytesOut;
+            m_statsRepository.PacketsInPerSecond = packetsIn - m_lastPacketsIn;
+            m_statsRepository.PacketsOutPerSecond = packetsOut - m_lastPacketsOut;
 
-            while (true)
-            {
-                m_statsRepository.CPUUsage = (int)cpuCounter.NextValue();
+            m_statsRepository.WorldUpdateTime = m_lastWorldUpdateLength;
 
-                long bytesIn = NetPeer.TotalBytesIn;
-                long bytesOut = NetPeer.TotalBytesOut;
-                long packetsIn = NetPeer.TotalPacketsIn;
-                long packetsOut = NetPeer.TotalPacketsOut;
+            m_lastBytesIn = bytesIn;
+            m_lastBytesOut = bytesOut;
+            m_lastPacketsIn = packetsIn;
+            m_lastPacketsOut = packetsOut;
 
-                m_statsRepository.TotalBytesIn = bytesIn;
-                m_statsRepository.TotalBytesOut = bytesOut;
-                m_statsRepository.TotalPacketsIn = packetsIn;
-                m_statsRepository.TotalPacketsOut = packetsOut;
+            m_statsRepository.OnlinePlayerCount = m_players.Count;
 
-                m_statsRepository.BytesInPerSecond = bytesIn - lastBytesIn;
-                m_statsRepository.BytesOutPerSecond = bytesOut - lastBytesOut;
-                m_statsRepository.PacketsInPerSecond = packetsIn - lastPacketsIn;
-                m_statsRepository.PacketsOutPerSecond = packetsOut - lastPacketsOut;
+            m_statsRepository.ZoneUpdateTimes = m_zones.Values.ToDictionary(z => "Zone " + z.ID, z => z.LastUpdateLength);
 
-                m_statsRepository.WorldUpdateTime = m_lastWorldUpdateLength;
-
-                lastBytesIn = bytesIn;
-                lastBytesOut = bytesOut;
-                lastPacketsIn = packetsIn;
-                lastPacketsOut = packetsOut;
-
-                m_statsRepository.OnlinePlayerCount = m_players.Count;
-
-                m_statsRepository.ZoneUpdateTimes = m_zones.Values.ToDictionary(z => "Zone " + z.ID, z => z.LastUpdateLength);
-
-                Thread.Sleep(STATS_UPDATE_INTERVAL_MS);
-            }
+            m_fiber.Schedule(StatsUpdate, TimeSpan.FromMilliseconds(STATS_UPDATE_INTERVAL_MS), false);
         }
 
         private Dictionary<int, Zone> BuildZones(INPCRepository npcRepository, IAbilityRepository abilityRepository)
