@@ -3,7 +3,12 @@ namespace Server.Abilities
 {
     public enum UseAbilityResult
     {
-        OK = 0,
-        Failed = 1
+        Completed = 0,
+        Failed = 1,
+
+        Accepted = 2,
+        NotEnoughPower = 3,
+        InvalidTarget = 4,
+        OnCooldown = 5
     }
 }

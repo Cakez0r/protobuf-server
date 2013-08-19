@@ -55,19 +55,16 @@ namespace Server.NPC
             StateUpdate.Y = Position.Y;
         }
 
-        public Task<UseAbilityResult> AcceptAbilityAsSource(AbilityInstance ability)
+        public UseAbilityResult AcceptAbilityAsSource(AbilityInstance ability)
         {
-            return m_fiber.Enqueue(() =>
-            {
-                return UseAbilityResult.OK;
-            });
+            return UseAbilityResult.Completed;
         }
 
         public Task<UseAbilityResult> AcceptAbilityAsTarget(AbilityInstance ability)
         {
             return m_fiber.Enqueue(() =>
             {
-                return UseAbilityResult.OK;
+                return UseAbilityResult.Completed;
             });
         }
     }
