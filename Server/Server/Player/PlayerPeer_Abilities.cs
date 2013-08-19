@@ -34,9 +34,10 @@ namespace Server
                     //Send response and create cancellation token if ability has a cast time
                     if (abilityModel.CastTimeMS > 0)
                     {
-                        Send(new UseAbility_S2C() { Result = (int)result, Timestamp = Environment.TickCount });
-
                         m_spellCastCancellationToken = new CancellationTokenSource();
+
+                        Send(new AbilityUseStarted() { Result = (int)result, FinishTime = Environment.TickCount + abilityModel.CastTimeMS });
+
                         await Task.Delay(abilityModel.CastTimeMS, m_spellCastCancellationToken.Token);
                     }
 
