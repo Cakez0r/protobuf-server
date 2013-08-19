@@ -10,5 +10,8 @@ namespace Protocol
 
         [ProtoMember(2)]
         public int FinishTime { get; set; }
+
+        [ProtoMember(3)]
+        public int Timestamp { get; set; }
     }
 }

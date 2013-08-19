@@ -157,5 +157,14 @@ namespace Server.Zones
                 return target;
             });
         }
+
+        public void SendMessageToZone(string sender, string message)
+        {
+            ChatMessage cm = new ChatMessage() { SenderName = sender, Message = message };
+            foreach (PlayerPeer player in PlayersInZone)
+            {
+                player.Send(cm);
+            }
+        }
     }
 }

@@ -40,7 +40,7 @@ namespace Server
                     {
                         m_spellCastCancellationToken = new CancellationTokenSource();
 
-                        Send(new AbilityUseStarted() { Result = (int)result, FinishTime = Environment.TickCount + abilityModel.CastTimeMS });
+                        Send(new AbilityUseStarted() { Result = (int)result, FinishTime = Environment.TickCount + abilityModel.CastTimeMS, Timestamp = Environment.TickCount });
 
                         await Task.Delay(abilityModel.CastTimeMS, m_spellCastCancellationToken.Token);
                     }
@@ -70,6 +70,8 @@ namespace Server
                         {
                             result = await target.AcceptAbilityAsTarget(abilityInstance);
                         }
+
+                        m_spellCastCancellationToken = null;
                     }
                 }
                 else
@@ -79,7 +81,6 @@ namespace Server
             }
 
             Respond(ability, new UseAbility_S2C() { Result = (int)result, Timestamp = Environment.TickCount });
-            m_spellCastCancellationToken = null;
         }
 
         private void Handle_StopCasting(StopCasting sc)

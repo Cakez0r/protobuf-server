@@ -50,6 +50,7 @@ namespace Server
             m_unauthenticatedHandler.SetRoute<TimeSync_C2S>(Handle_TimeSync);
 
             m_authenticatedHandler.SetRoute<TimeSync_C2S>(Handle_TimeSync);
+            m_authenticatedHandler.SetRoute<ChatMessage>(Handle_ChatMessage);
             m_authenticatedHandler.SetRoute<PlayerStateUpdate_C2S>(Handle_PlayerStateUpdate);
             m_authenticatedHandler.SetRoute<UseAbility_C2S>(Handle_UseAbility);
             m_authenticatedHandler.SetRoute<StopCasting>(Handle_StopCasting);
@@ -122,6 +123,11 @@ namespace Server
         private void Handle_TimeSync(TimeSync_C2S sync)
         {
             Respond(sync, new TimeSync_S2C() { Time = Environment.TickCount });
+        }
+
+        private void Handle_ChatMessage(ChatMessage cm)
+        {
+            CurrentZone.SendMessageToZone(m_player.Name, cm.Message);
         }
 
         private const string LOG_FORMAT = "[{0}] {1}: {2}";
