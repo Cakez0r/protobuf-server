@@ -27,7 +27,7 @@ namespace Server
             {
                 result = LoadPlayer(account);
 
-                ChangeZone(0);
+                Warp(0, (float)m_player.X, (float)m_player.Y);
 
                 IsAuthenticated = true;
             }

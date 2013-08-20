@@ -125,23 +125,33 @@ namespace Server
 
         public override void Dispose()
         {
-            try
+            Fiber.Enqueue(() =>
             {
-                if (CurrentZone != null)
+                try
                 {
-                    CurrentZone.RemoveFromZone(this);
-                }
-            }
-            catch (Exception ex)
-            {
-                Warn("Failed to dispose player: {0}", ex);
-            }
+                    Save(SaveFlags.All);
 
-            base.Dispose();
+                    if (CurrentZone != null)
+                    {
+                        CurrentZone.RemoveFromZone(this);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Warn("Failed to dispose player: {0}", ex);
+                }
+
+                base.Dispose();
+            });
         }
 
         private void Save(SaveFlags saveFlags)
         {
+            if (!IsAuthenticated)
+            {
+                return;
+            }
+
             if ((saveFlags & SaveFlags.General) == SaveFlags.General)
             {
                 Trace("Saving (General)");

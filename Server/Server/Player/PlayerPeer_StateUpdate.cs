@@ -126,5 +126,15 @@ namespace Server
                 }
             }
         }
+
+        private void Warp(int zoneID, float x, float y)
+        {
+            if (CurrentZone == null || zoneID != CurrentZone.ID)
+            {
+                ChangeZone(zoneID);
+            }
+
+            Send(new Warp() { ZoneID = zoneID, X = x, Y = y });
+        }
     }
 }

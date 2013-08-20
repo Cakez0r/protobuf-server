@@ -68,6 +68,7 @@
     <Compile Include="StopCasting.cs" />
     <Compile Include="TimeSync.cs" />
     <Compile Include="UseAbility.cs" />
+    <Compile Include="Warp.cs" />
     <Compile Include="WorldState.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Threading.Tasks;
 
 namespace Server.Utility
@@ -8,6 +9,8 @@ namespace Server.Utility
     /// </summary>
     public class Fiber
     {
+        private static Logger s_log = LogManager.GetCurrentClassLogger();
+
         private ConcurrentExclusiveSchedulerPair m_schedulers = new ConcurrentExclusiveSchedulerPair();
 
         /// <summary>
@@ -67,7 +70,18 @@ namespace Server.Utility
 
         private void Start(Task t, bool exclusive)
         {
-            t.Start(exclusive ? m_schedulers.ExclusiveScheduler : m_schedulers.ConcurrentScheduler);
+            try
+            {
+                t.Start(exclusive ? m_schedulers.ExclusiveScheduler : m_schedulers.ConcurrentScheduler);
+            }
+            catch (TaskSchedulerException ex)
+            {
+                //InvalidOperationException will throw if the fiber is stopped but something tries to enqueue another job
+                if (!(ex.InnerException is InvalidOperationException))
+                {
+                    s_log.Warn("Exception starting task on fiber: {0}", ex);
+                }
+            }
         }
     }
 }
