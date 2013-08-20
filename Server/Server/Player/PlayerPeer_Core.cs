@@ -43,7 +43,8 @@ namespace Server
             private set;
         }
 
-        public PlayerPeer(Socket socket, IAccountRepository accountRepository, INPCRepository npcRepository, IPlayerRepository playerRepository, IAbilityRepository abilityRepository, Dictionary<int, Zone> zones) : base(socket)
+        public PlayerPeer(Socket socket, IAccountRepository accountRepository, INPCRepository npcRepository, IPlayerRepository playerRepository, IAbilityRepository abilityRepository, Dictionary<int, Zone> zones)
+            : base(socket)
         {
             m_accountRepository = accountRepository;
             m_playerRepository = playerRepository;
@@ -70,36 +71,38 @@ namespace Server
 
         private void Update()
         {
-            LatestStateUpdate = new PlayerStateUpdate_S2C()
+            if (IsAuthenticated)
             {
-                PlayerID = ID,
-                Health = Health,
-                MaxHealth = MaxHealth,
-                Power = Power,
-                MaxPower = MaxPower,
-                Rot = Rotation,
-                TargetID = TargetID,
-                Time = TimeOnClient,
-                VelX = Velocity.X,
-                VelY = Velocity.Y,
-                X = Position.X,
-                Y = Position.Y
-            };
+                LatestStateUpdate = new PlayerStateUpdate_S2C()
+                {
+                    PlayerID = ID,
+                    Health = Health,
+                    MaxHealth = MaxHealth,
+                    Power = Power,
+                    MaxPower = MaxPower,
+                    Rot = Rotation,
+                    TargetID = TargetID,
+                    Time = TimeOnClient,
+                    VelX = Velocity.X,
+                    VelY = Velocity.Y,
+                    X = Position.X,
+                    Y = Position.Y
+                };
 
-            if (IsAuthenticated && CurrentZone != null)
-            {
-                BuildAndSendWorldStateUpdate();
+                if (CurrentZone != null)
+                {
+                    BuildAndSendWorldStateUpdate();
+                }
+                if (Environment.TickCount - m_lastSaveTime > SAVE_INTERVAL_MS)
+                {
+                    Save(SaveFlags.General);
+                }
             }
 
             if (Environment.TickCount - m_lastActivity > PING_TIMEOUT)
             {
                 Send(new Ping());
                 m_lastActivity = Environment.TickCount;
-            }
-
-            if (Environment.TickCount - m_lastSaveTime > SAVE_INTERVAL_MS)
-            {
-                Save(SaveFlags.General);
             }
 
             Fiber.Schedule(Update, TimeSpan.FromMilliseconds(TARGET_UPDATE_TIME_MS));
