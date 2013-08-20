@@ -47,6 +47,11 @@ namespace Server
 
         private void Handle_PlayerStateUpdate(PlayerStateUpdate_C2S psu)
         {
+            if (m_spellCastCancellationToken != null && (psu.X != Position.X || psu.Y != Position.Y))
+            {
+                StopCasting(true);
+            }
+
             Rotation = psu.Rot;
             Position = new Vector2(psu.X, psu.Y);
             Velocity = new Vector2(psu.VelX, psu.VelY);
@@ -108,6 +113,32 @@ namespace Server
             }
 
             Send(m_worldState);
+        }
+
+        private void ApplyHealthDelta(int delta)
+        {
+            int newHealth = Health + delta;
+
+            Health = MathHelper.Clamp(newHealth, 0, MaxHealth);
+
+            if (Health == 0)
+            {
+                Die();
+            }
+        }
+
+        private void ApplyPowerDelta(int delta)
+        {
+            int power = Power + delta;
+
+            Power = MathHelper.Clamp(power, 0, MaxPower);
+        }
+
+        private void Die()
+        {
+            Health = MaxHealth;
+            Power = MaxPower;
+            Warp(0, (float)m_player.X, (float)m_player.Y);
         }
 
         private void ChangeZone(int newZoneID)

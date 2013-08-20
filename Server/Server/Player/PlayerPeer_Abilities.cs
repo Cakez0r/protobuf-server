@@ -34,46 +34,54 @@ namespace Server
                 //Not on global cooldown
                 if (DateTime.Now - m_lastAbilityAcceptTime > m_globalCooldown)
                 {
-                    m_lastAbilityAcceptTime = DateTime.Now;
-                    result = UseAbilityResult.Accepted;
-
-                    //Send response and create cancellation token if ability has a cast time
-                    if (abilityModel.CastTimeMS > 0)
+                    try
                     {
-                        m_spellCastCancellationToken = new CancellationTokenSource();
+                        m_lastAbilityAcceptTime = DateTime.Now;
+                        result = UseAbilityResult.Accepted;
 
-                        Send(new AbilityUseStarted() { Result = (int)result, FinishTime = Environment.TickCount + abilityModel.CastTimeMS, Timestamp = Environment.TickCount });
-
-                        await Task.Delay(abilityModel.CastTimeMS, m_spellCastCancellationToken.Token);
-                    }
-
-                    //Resolve the target if the ability is being used on a target
-                    ITargetable target = default(ITargetable);
-                    if (ability.TargetID != 0)
-                    {
-                        target = await CurrentZone.GetTarget(ability.TargetID);
-                        if (target == null)
+                        //Send response and create cancellation token if ability has a cast time
+                        if (abilityModel.CastTimeMS > 0)
                         {
-                            result = UseAbilityResult.InvalidTarget;
-                        }
-                    }
+                            m_spellCastCancellationToken = new CancellationTokenSource();
 
-                    //If the target was found or the ability isn't being used on a target...
-                    if (target != null || ability.TargetID == 0)
-                    {
-                        //Create the ability instance
-                        AbilityInstance abilityInstance = new AbilityInstance(this, target, abilityModel);
+                            Send(new AbilityUseStarted() { Result = (int)result, FinishTime = Environment.TickCount + abilityModel.CastTimeMS, Timestamp = Environment.TickCount });
 
-                        //Run deltas on source
-                        result = AcceptAbilityAsSource(abilityInstance);
-
-                        //Run deltas on target if the source deltas were ok and there is a target
-                        if (target != null && result == UseAbilityResult.Completed)
-                        {
-                            result = await target.AcceptAbilityAsTarget(abilityInstance);
+                            await Task.Delay(abilityModel.CastTimeMS, m_spellCastCancellationToken.Token);
                         }
 
-                        m_spellCastCancellationToken = null;
+                        //Resolve the target if the ability is being used on a target
+                        ITargetable target = default(ITargetable);
+                        if (ability.TargetID != 0)
+                        {
+                            target = await CurrentZone.GetTarget(ability.TargetID);
+                            if (target == null)
+                            {
+                                result = UseAbilityResult.InvalidTarget;
+                            }
+                        }
+
+                        //If the target was found or the ability isn't being used on a target...
+                        if (target != null || ability.TargetID == 0)
+                        {
+                            //Create the ability instance
+                            AbilityInstance abilityInstance = new AbilityInstance(this, target, abilityModel);
+
+                            //Run deltas on source
+                            result = AcceptAbilityAsSource(abilityInstance);
+
+                            //Run deltas on target if the source deltas were ok and there is a target
+                            if (target != null && result == UseAbilityResult.Completed)
+                            {
+                                result = await target.AcceptAbilityAsTarget(abilityInstance);
+                            }
+
+                            m_spellCastCancellationToken = null;
+                        }
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        result = UseAbilityResult.Cancelled;
+                        Trace("Use ability cancelled");
                     }
                 }
                 else
@@ -81,14 +89,24 @@ namespace Server
                     result = UseAbilityResult.OnCooldown;
                 }
             }
+            else
+            {
+                result = UseAbilityResult.AlreadyCasting;
+            }
 
             Respond(ability, new UseAbility_S2C() { Result = (int)result, Timestamp = Environment.TickCount });
         }
 
         private void Handle_StopCasting(StopCasting sc)
         {
+            StopCasting(false);
+        }
+
+        private void StopCasting(bool notifyClient)
+        {
             if (m_spellCastCancellationToken != null)
             {
+                Trace("Stop casting");
                 m_spellCastCancellationToken.Cancel();
                 m_spellCastCancellationToken = null;
             }
@@ -101,11 +119,8 @@ namespace Server
 
             UseAbilityResult result = UseAbilityResult.Completed;
 
-            int newHealth = Health + ability.Ability.SourceHealthDelta;
-            int newPower = Power + ability.Ability.SourcePowerDelta;
-
-            Health = MathHelper.Clamp(newHealth, 0, MaxHealth);
-            Power = MathHelper.Clamp(newPower, 0, MaxPower);
+            ApplyHealthDelta(ability.Ability.SourceHealthDelta);
+            ApplyPowerDelta(ability.Ability.SourcePowerDelta);
 
             return result;
         }
@@ -116,13 +131,14 @@ namespace Server
             {
                 Trace("Accepting ability as target");
 
-                UseAbilityResult result = UseAbilityResult.Completed;
+                UseAbilityResult result = UseAbilityResult.OutOfRange;
+                if (Vector2.DistanceSquared(ability.Source.Position, Position) <= ability.Ability.Range * ability.Ability.Range)
+                {
+                    result = UseAbilityResult.Completed;
 
-                int newHealth = Health + ability.Ability.TargetHealthDelta;
-                int newPower = Power + ability.Ability.TargetPowerDelta;
-
-                Health = MathHelper.Clamp(newHealth, 0, MaxHealth);
-                Power = MathHelper.Clamp(newPower, 0, MaxPower);
+                    ApplyHealthDelta(ability.Ability.TargetHealthDelta);
+                    ApplyPowerDelta(ability.Ability.TargetPowerDelta);
+                }
 
                 return result;
             });
