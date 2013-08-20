@@ -60,6 +60,11 @@ namespace Server.Utility
             return Task.Delay(waitTime).ContinueWith((t) => Enqueue<T>(f, exclusive)).Unwrap();
         }
 
+        public void Stop()
+        {
+            m_schedulers.Complete();
+        }
+
         private void Start(Task t, bool exclusive)
         {
             t.Start(exclusive ? m_schedulers.ExclusiveScheduler : m_schedulers.ConcurrentScheduler);

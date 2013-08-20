@@ -1,6 +1,8 @@
 ﻿using Data.Abilities;
+using Data.Players;
 using Protocol;
 using Server.Abilities;
+using Server.Player;
 using Server.Utility;
 using System;
 using System.Collections.Generic;
@@ -12,7 +14,7 @@ namespace Server
     public partial class PlayerPeer
     {
         private static readonly TimeSpan m_globalCooldown = TimeSpan.FromMilliseconds(1000);
-        private IReadOnlyDictionary<int, float> m_stats;
+        private IReadOnlyDictionary<StatType, PlayerStatModel> m_stats;
 
         private IAbilityRepository m_abilityRepository;
         private CancellationTokenSource m_spellCastCancellationToken;
@@ -94,7 +96,7 @@ namespace Server
 
         public UseAbilityResult AcceptAbilityAsSource(AbilityInstance ability)
         {
-            s_log.Trace("Accepting ability as source");
+            Trace("Accepting ability as source");
             CurrentZone.PlayerUsedAbility(ability);
 
             UseAbilityResult result = UseAbilityResult.Completed;
@@ -112,7 +114,7 @@ namespace Server
         {
             return Fiber.Enqueue(() =>
             {
-                s_log.Trace("Accepting ability as target");
+                Trace("Accepting ability as target");
 
                 UseAbilityResult result = UseAbilityResult.Completed;
 

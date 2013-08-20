@@ -22,7 +22,7 @@ namespace Data.Players
 
         public void UpdatePlayer(int playerID, int accountID, string name, float health, float power, long money, int map, float x, float y, float rotation)
         {
-            Function("UPD_Player(@_playerID, @_accountID, @_name, @_health, @_power, @_money, @_map, @_position, @_rotation)",
+            Function("UPD_Player(@_playerID, @_accountID, @_name, @_health, @_power, @_money, @_map, @_x, @_y, @_rotation)",
                 new 
                 { 
                     _playerID = playerID, 
@@ -32,7 +32,8 @@ namespace Data.Players
                     _power = power, 
                     _money = money, 
                     _map = map, 
-                    _position = new NpgsqlTypes.NpgsqlPoint(x, y), 
+                    _x = x, 
+                    _y = y, 
                     _rotation = rotation 
                 });
         }

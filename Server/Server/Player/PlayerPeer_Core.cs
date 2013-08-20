@@ -10,20 +10,32 @@ using Server.Zones;
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using Server.Player;
 
 namespace Server
 {
     public partial class PlayerPeer : NetPeer, ITargetable
     {
         private const int TARGET_UPDATE_TIME_MS = 50;
+        private const int SAVE_INTERVAL_MS = 60000;
 
         private static Logger s_log = LogManager.GetCurrentClassLogger();
+
+        [Flags]
+        private enum SaveFlags : uint
+        {
+            General = 1,
+            Stats = 2,
+            All = 0xFFFFFFFF
+        }
 
         private ObjectRouter m_unauthenticatedHandler = new ObjectRouter();
         private ObjectRouter m_authenticatedHandler = new ObjectRouter();
 
         private int m_lastActivity = Environment.TickCount;
         private const int PING_TIMEOUT = 5000;
+
+        private int m_lastSaveTime = Environment.TickCount;
 
         public bool IsAuthenticated
         {
@@ -85,6 +97,11 @@ namespace Server
                 m_lastActivity = Environment.TickCount;
             }
 
+            if (Environment.TickCount - m_lastSaveTime > SAVE_INTERVAL_MS)
+            {
+                Save(SaveFlags.General);
+            }
+
             Fiber.Schedule(Update, TimeSpan.FromMilliseconds(TARGET_UPDATE_TIME_MS));
         }
 
@@ -120,6 +137,27 @@ namespace Server
             base.Dispose();
         }
 
+        private void Save(SaveFlags saveFlags)
+        {
+            if ((saveFlags & SaveFlags.General) == SaveFlags.General)
+            {
+                Trace("Saving (General)");
+                float health = (float)Health / MaxHealth;
+                float power = (float)Power / MaxPower;
+                m_playerRepository.UpdatePlayer(m_player.PlayerID, m_player.AccountID, m_player.Name, health, power, 0, CurrentZone.ID, Position.X, Position.Y, Rotation);
+                m_lastSaveTime = Environment.TickCount;
+            }
+
+            if ((saveFlags & SaveFlags.Stats) == SaveFlags.Stats)
+            {
+                Trace("Saving (Stats)");
+                foreach (PlayerStatModel stat in m_stats.Values)
+                {
+                    m_playerRepository.UpdatePlayerStat(stat.PlayerStatID, stat.PlayerID, stat.StatID, stat.StatValue);
+                }
+            }
+        }
+
         private void Handle_TimeSync(TimeSync_C2S sync)
         {
             Respond(sync, new TimeSync_S2C() { Time = Environment.TickCount });
@@ -130,6 +168,7 @@ namespace Server
             CurrentZone.SendMessageToZone(m_player.Name, cm.Message);
         }
 
+        #region Logging
         private const string LOG_FORMAT = "[{0}] {1}: {2}";
         private void Trace(string message, params object[] args)
         {
@@ -147,5 +186,6 @@ namespace Server
         {
             s_log.Error(string.Format(LOG_FORMAT, ID, m_player != null ? m_player.Name : "UNAUTHENTICATED", string.Format(message, args)));
         }
+        #endregion
     }
 }

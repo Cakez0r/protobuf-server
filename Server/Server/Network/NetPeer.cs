@@ -263,6 +263,7 @@ namespace Server
             {
                 s_buffers.ReturnBuffer(buffer);
             }
+            m_fiber.Stop();
             Disposed = true;
         }
 

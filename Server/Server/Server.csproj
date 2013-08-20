@@ -68,6 +68,7 @@
     <Compile Include="Abilities\AbilityInstance.cs" />
     <Compile Include="Abilities\ITargetable.cs" />
     <Compile Include="Abilities\UseAbilityResult.cs" />
+    <Compile Include="Gameplay\Formulas.cs" />
     <Compile Include="NPC\Behaviours\WanderRadiusNPCBehaviour.cs" />
     <Compile Include="NPC\INPCBehaviour.cs" />
     <Compile Include="NPC\NPCFactory.cs" />
@@ -75,6 +76,7 @@
     <Compile Include="Player\PlayerPeer_Abilities.cs" />
     <Compile Include="Player\PlayerPeer_Authentication.cs" />
     <Compile Include="Player\PlayerPeer_StateUpdate.cs" />
+    <Compile Include="Player\StatType.cs" />
     <Compile Include="ServerConfiguration.cs" />
     <Compile Include="Utility\Fiber.cs" />
     <Compile Include="Network\NetPeer.cs" />

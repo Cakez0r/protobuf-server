@@ -1,6 +1,8 @@
 ﻿using Data.Accounts;
 using Data.Players;
 using Protocol;
+using Server.Gameplay;
+using Server.Player;
 using System;
 using System.Linq;
 using System.Security.Cryptography;
@@ -23,31 +25,11 @@ namespace Server
             AuthenticationAttempt_S2C.ResponseCode result;
             if (account != null)
             {
-                PlayerModel player = m_playerRepository.GetPlayersByAccountID(account.AccountID).FirstOrDefault();
+                result = LoadPlayer(account);
 
-                if (player != null)
-                {
-                    m_player = player;
-                    MaxHealth = 1000;
-                    MaxPower = 1000;
-                    Health = (int)(MaxHealth * m_player.Health);
-                    Power = (int)(MaxPower * m_player.Power);
+                ChangeZone(0);
 
-                    m_stats = m_playerRepository.GetPlayerStatsByPlayerID(player.PlayerID).ToDictionary(stat => stat.StatID, stat => stat.StatValue);
-
-                    Introduction = new PlayerIntroduction() { PlayerID = ID, Name = player.Name };
-                    Info("Logged in");
-                    result = AuthenticationAttempt_S2C.ResponseCode.OK;
-
-                    ChangeZone(0);
-
-                    IsAuthenticated = true;
-                }
-                else
-                {
-                    result = AuthenticationAttempt_S2C.ResponseCode.Error;
-                    Info("Username: {1} has no characters but tried to log in.", aa.Username);
-                }
+                IsAuthenticated = true;
             }
             else
             {
@@ -56,6 +38,34 @@ namespace Server
             }
 
             Respond(aa, new AuthenticationAttempt_S2C() { PlayerID = ID, Result = result });
+        }
+
+        private AuthenticationAttempt_S2C.ResponseCode LoadPlayer(AccountModel account)
+        {
+            AuthenticationAttempt_S2C.ResponseCode result;
+            PlayerModel player = m_playerRepository.GetPlayersByAccountID(account.AccountID).FirstOrDefault();
+
+            if (player != null)
+            {
+                m_player = player;
+                m_stats = m_playerRepository.GetPlayerStatsByPlayerID(player.PlayerID).ToDictionary(stat => (StatType)stat.StatID, stat => stat);
+
+                MaxHealth = Formulas.StaminaToHealth(m_stats[StatType.Stamina].StatValue);
+                MaxPower = 1000;
+                Health = (int)(MaxHealth * m_player.Health);
+                Power = (int)(MaxPower * m_player.Power);
+
+                Introduction = new PlayerIntroduction() { PlayerID = ID, Name = player.Name };
+
+                Info("Player loaded for account {0}", account.Username);
+                result = AuthenticationAttempt_S2C.ResponseCode.OK;
+            }
+            else
+            {
+                result = AuthenticationAttempt_S2C.ResponseCode.Error;
+                Info("Username: {1} has no characters but tried to log in.", account.Username);
+            }
+            return result;
         }
 
         private static string HashPassword(string username, string password)
