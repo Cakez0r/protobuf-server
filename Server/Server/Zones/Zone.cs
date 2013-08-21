@@ -117,11 +117,15 @@ namespace Server.Zones
 
         public void GatherNPCStatesForPlayer(PlayerPeer player, List<NPCStateUpdate> playerNPCStates)
         {
-            playerNPCStates.Clear();
             Vector2 playerPosition = new Vector2(player.LatestStateUpdate.X, player.LatestStateUpdate.Y);
             m_npcLock.EnterReadLock();
             foreach (NPCInstance npc in m_npcs.Values)
             {
+                if (npc.Dead)
+                {
+                    continue;
+                }
+
                 Vector2 npcPosition = new Vector2((float)npc.NPCSpawnModel.X, (float)npc.NPCSpawnModel.Y);
                 float distanceSqr = (playerPosition - npcPosition).LengthSquared();
                 if (distanceSqr <= RELEVANCE_DISTANCE_SQR)

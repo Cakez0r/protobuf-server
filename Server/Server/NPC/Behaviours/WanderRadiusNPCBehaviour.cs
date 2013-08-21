@@ -6,17 +6,23 @@ namespace Server.NPC.Behaviours
 {
     public class WanderRadiusNPCBehaviour : INPCBehaviour
     {
-        private const float WALK_SPEED = 7;
+        private float m_walkSpeed;
 
         private float m_radius;
 
         private Vector2? m_target;
 
-        private Random m_rng = new Random();
+        private Random m_rng;
+
+        public WanderRadiusNPCBehaviour()
+        {
+            m_rng = new Random(GetHashCode());
+        }
 
         public void Initialise(IReadOnlyDictionary<string, string> vars)
         {
             m_radius = float.Parse(vars["Radius"]);
+            m_walkSpeed = float.Parse(vars["Speed"]);
         }
 
         public void Update(TimeSpan dt, NPCInstance npc)
@@ -31,11 +37,13 @@ namespace Server.NPC.Behaviours
                 m_target = GetRandomTarget(new Vector2((float)npc.NPCSpawnModel.X, (float)npc.NPCSpawnModel.Y), m_radius);
             }
 
-            Vector2 delta = m_target.Value - npc.Position;
-            delta.Normalize();
-            delta *= WALK_SPEED * (float)dt.TotalSeconds;
+            Vector2 velocity = m_target.Value - npc.Position;
+            velocity.Normalize();
+            velocity *= m_walkSpeed;
 
-            npc.Position += delta;
+            npc.Velocity = velocity;
+
+            npc.Position += velocity * (float)dt.TotalSeconds;
         }
 
         private Vector2 GetRandomTarget(Vector2 origin, float radius)

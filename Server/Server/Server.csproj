@@ -76,7 +76,7 @@
     <Compile Include="Player\PlayerPeer_Abilities.cs" />
     <Compile Include="Player\PlayerPeer_Authentication.cs" />
     <Compile Include="Player\PlayerPeer_StateUpdate.cs" />
-    <Compile Include="Player\StatType.cs" />
+    <Compile Include="Gameplay\StatType.cs" />
     <Compile Include="ServerConfiguration.cs" />
     <Compile Include="Utility\Fiber.cs" />
     <Compile Include="Network\NetPeer.cs" />

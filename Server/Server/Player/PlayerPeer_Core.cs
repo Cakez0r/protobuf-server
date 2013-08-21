@@ -10,7 +10,6 @@ using Server.Zones;
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
-using Server.Player;
 
 namespace Server
 {
@@ -93,6 +92,8 @@ namespace Server
                     X = Position.X,
                     Y = Position.Y
                 };
+
+                ApplyPowerDelta((int)(MaxPower * 0.001f));
 
                 if (CurrentZone != null)
                 {

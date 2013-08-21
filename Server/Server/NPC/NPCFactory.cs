@@ -1,5 +1,6 @@
 ﻿using Data.NPCs;
 using NLog;
+using Server.Gameplay;
 using Server.Utility;
 using System;
 using System.Collections.Generic;
@@ -35,7 +36,7 @@ namespace Server.NPC
                 behaviours.Add(behaviour);
             }
 
-            NPCInstance npcInstance = new NPCInstance(fiber, npc, spawn, behaviours, m_npcRepository.GetNPCStatsByNPCID(spawn.NPCID));
+            NPCInstance npcInstance = new NPCInstance(fiber, npc, spawn, behaviours, m_npcRepository.GetNPCStatsByNPCID(spawn.NPCID).ToDictionary(kvp => (StatType)kvp.Key, kvp => kvp.Value));
 
             return npcInstance;
         }

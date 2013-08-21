@@ -2,7 +2,6 @@
 using Data.Players;
 using Protocol;
 using Server.Gameplay;
-using Server.Player;
 using System;
 using System.Linq;
 using System.Security.Cryptography;

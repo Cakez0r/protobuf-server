@@ -69,6 +69,9 @@ namespace Server
             m_worldState.PlayerStates.Clear();
             m_worldState.PlayerIntroductions.Clear();
 
+            m_worldState.NPCStates.Clear();
+            m_worldState.NPCIntroductions.Clear();
+
             m_worldState.CurrentServerTime = Environment.TickCount;
             m_worldState.Health = Health;
             m_worldState.MaxHealth = MaxHealth;
