@@ -24,6 +24,11 @@ namespace Server.NPC
 
         public Vector2 Position { get; set; }
 
+        public string Name
+        {
+            get { return string.Format("[NPC {0} {1}]", NPCModel.Name, ID); }
+        }
+
         public NPCInstance(Fiber fiber, NPCModel npc, NPCSpawnModel npcSpawn, List<INPCBehaviour> behaviours, IReadOnlyDictionary<int, float> stats)
         {
             NPCModel = npc;

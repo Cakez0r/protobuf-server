@@ -43,6 +43,11 @@ namespace Server
             private set;
         }
 
+        public string Name
+        {
+            get { return m_player != null ? m_player.Name : string.Format("[Peer{0}]", ID); }
+        }
+
         public PlayerPeer(Socket socket, IAccountRepository accountRepository, INPCRepository npcRepository, IPlayerRepository playerRepository, IAbilityRepository abilityRepository, Dictionary<int, Zone> zones)
             : base(socket)
         {
@@ -178,6 +183,7 @@ namespace Server
 
         private void Handle_ChatMessage(ChatMessage cm)
         {
+            Info("Chat: {0}", cm.Message);
             CurrentZone.SendMessageToZone(m_player.Name, cm.Message);
         }
 
@@ -185,19 +191,19 @@ namespace Server
         private const string LOG_FORMAT = "[{0}] {1}: {2}";
         private void Trace(string message, params object[] args)
         {
-            s_log.Trace(string.Format(LOG_FORMAT, ID, m_player != null ? m_player.Name : "UNAUTHENTICATED", string.Format(message, args)));
+            s_log.Trace(string.Format(LOG_FORMAT, ID, Name, string.Format(message, args)));
         }
         private void Info(string message, params object[] args)
         {
-            s_log.Info(string.Format(LOG_FORMAT, ID, m_player != null ? m_player.Name : "UNAUTHENTICATED", string.Format(message, args)));
+            s_log.Info(string.Format(LOG_FORMAT, ID, Name, string.Format(message, args)));
         }
         private void Warn(string message, params object[] args)
         {
-            s_log.Warn(string.Format(LOG_FORMAT, ID, m_player != null ? m_player.Name : "UNAUTHENTICATED", string.Format(message, args)));
+            s_log.Warn(string.Format(LOG_FORMAT, ID, Name, string.Format(message, args)));
         }
         private void Error(string message, params object[] args)
         {
-            s_log.Error(string.Format(LOG_FORMAT, ID, m_player != null ? m_player.Name : "UNAUTHENTICATED", string.Format(message, args)));
+            s_log.Error(string.Format(LOG_FORMAT, ID, Name, string.Format(message, args)));
         }
         #endregion
     }

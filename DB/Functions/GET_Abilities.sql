@@ -1,9 +1,9 @@
-CREATE OR REPLACE FUNCTION GET_Abilities()
+﻿CREATE OR REPLACE FUNCTION GET_Abilities()
 RETURNS SETOF Ability
 AS $$
     SELECT
         AbilityID,
-        FriendlyName,
+        InternalName,
         AbilityType,
         TargetType,
         CastType,

@@ -1,7 +1,7 @@
 CREATE TABLE Ability
 (
     AbilityID SERIAL CONSTRAINT PK_Ability PRIMARY KEY,
-    FriendlyName TEXT NOT NULL,
+    InternalName TEXT NOT NULL,
     AbilityType INTEGER NOT NULL,
     TargetType INTEGER NOT NULL,
     CastType INTEGER NOT NULL,

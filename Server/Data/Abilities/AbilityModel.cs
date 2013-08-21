@@ -23,7 +23,7 @@ namespace Data.Abilities
         }
 
         public int AbilityID { get; set; }
-        public string FriendlyName { get; set; }
+        public string InternalName { get; set; }
         public int AbilityType { get; set; }
         public int TargetType { get; set; }
         public int CastType { get; set; }

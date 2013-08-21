@@ -5,7 +5,8 @@ AS $$
         NPCID,
         Name,
         Model,
-        Scale
+        Scale,
+        InternalName
     FROM
         NPC;
 $$ LANGUAGE SQL;

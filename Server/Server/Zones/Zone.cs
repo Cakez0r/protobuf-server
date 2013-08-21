@@ -155,7 +155,7 @@ namespace Server.Zones
                 }
 
                 return target;
-            });
+            }, false);
         }
 
         public void SendMessageToZone(string sender, string message)
