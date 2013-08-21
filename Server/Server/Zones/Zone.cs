@@ -126,7 +126,7 @@ namespace Server.Zones
                     continue;
                 }
 
-                Vector2 npcPosition = new Vector2((float)npc.NPCSpawnModel.X, (float)npc.NPCSpawnModel.Y);
+                Vector2 npcPosition = new Vector2((float)npc.Position.X, (float)npc.Position.Y);
                 float distanceSqr = (playerPosition - npcPosition).LengthSquared();
                 if (distanceSqr <= RELEVANCE_DISTANCE_SQR)
                 {
