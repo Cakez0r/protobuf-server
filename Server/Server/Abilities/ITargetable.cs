@@ -1,4 +1,5 @@
-﻿using Server.Utility;
+﻿using Server.Gameplay;
+using Server.Utility;
 using System.Threading.Tasks;
 
 namespace Server.Abilities
@@ -7,8 +8,11 @@ namespace Server.Abilities
     {
         string Name { get; }
         Vector2 Position { get; }
+        int Level { get; }
 
         UseAbilityResult AcceptAbilityAsSource(AbilityInstance abilityInstance);
         Task<UseAbilityResult> AcceptAbilityAsTarget(AbilityInstance abilityInstance);
+
+        void AwardXP(float xp);
     }
 }

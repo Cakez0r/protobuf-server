@@ -1,4 +1,5 @@
-﻿using Data.NPCs;
+﻿using Data.Abilities;
+using Data.NPCs;
 using NLog;
 using Protocol;
 using Server.Abilities;
@@ -63,6 +64,11 @@ namespace Server.NPC
             private set;
         }
 
+        public int Level
+        {
+            get { return 1; }
+        }
+
         public NPCInstance(Fiber fiber, NPCModel npc, NPCSpawnModel npcSpawn, List<INPCBehaviour> behaviours, IReadOnlyDictionary<StatType, float> stats)
         {
             NPCModel = npc;
@@ -73,7 +79,7 @@ namespace Server.NPC
             Position = new Vector2((float)npcSpawn.X, (float)npcSpawn.Y);
             ID = IDGenerator.GetNextID();
 
-            Health = Formulas.StaminaToHealth(m_stats[StatType.Stamina]);
+            Health = Formulas.StaminaToHealth(GetStatValue(StatType.Stamina));
             MaxHealth = Health;
 
             StateUpdate = new NPCStateUpdate()
@@ -109,7 +115,7 @@ namespace Server.NPC
             StateUpdate.MaxHealth = MaxHealth;
         }
 
-        public void ApplyHealthDelta(int delta)
+        public void ApplyHealthDelta(int delta, ITargetable source = null)
         {
             int newHealth = Health + delta;
 
@@ -117,16 +123,21 @@ namespace Server.NPC
 
             if (Health == 0)
             {
-                Die();
+                Die(source);
             }
         }
 
-        private void Die()
+        private void Die(ITargetable killer)
         {
             Dead = true;
             m_fiber.Schedule(Respawn, NPCSpawnModel.Frequency);
 
-            Info("Died");
+            if (killer != null)
+            {
+                killer.AwardXP(GetStatValue(StatType.XP));
+            }
+
+            Info("Killed by {0}", killer == null ? "[Unknown]" : killer.Name);
         }
 
         private void Respawn()
@@ -144,7 +155,7 @@ namespace Server.NPC
 
         public UseAbilityResult AcceptAbilityAsSource(AbilityInstance ability)
         {
-            ApplyHealthDelta(ability.Ability.SourceHealthDelta);
+            ApplyHealthDelta(ability.Ability.SourceHealthDelta, this);
             return UseAbilityResult.Completed;
         }
 
@@ -152,9 +163,38 @@ namespace Server.NPC
         {
             return m_fiber.Enqueue(() =>
             {
-                ApplyHealthDelta(ability.Ability.TargetHealthDelta);
-                return UseAbilityResult.Completed;
+                if (Dead)
+                {
+                    return UseAbilityResult.InvalidTarget;
+                }
+                else if (Vector2.DistanceSquared(ability.Source.Position, Position) > Math.Pow(ability.Ability.Range, 2))
+                {
+                    return UseAbilityResult.OutOfRange;
+                }
+                else
+                {
+                    int levelBonus = ability.Source.Level * 5;
+                    if (ability.Ability.AbilityType == AbilityModel.EAbilityType.HARM)
+                    {
+                        levelBonus *= -1;
+                    }
+                    ApplyHealthDelta(ability.Ability.TargetHealthDelta + levelBonus, ability.Source);
+                    return UseAbilityResult.Completed;
+                }
             });
+        }
+
+        public void AwardXP(float xp)
+        {
+        }
+
+        private float GetStatValue(StatType statType)
+        {
+            float stat;
+
+            m_stats.TryGetValue(statType, out stat);
+
+            return stat;
         }
 
         #region Logging

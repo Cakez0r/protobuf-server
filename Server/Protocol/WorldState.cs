@@ -32,5 +32,8 @@ namespace Protocol
 
         [ProtoMember(9)]
         public int MaxPower { get; set; }
+
+        [ProtoMember(10)]
+        public float XP { get; set; }
     }
 }

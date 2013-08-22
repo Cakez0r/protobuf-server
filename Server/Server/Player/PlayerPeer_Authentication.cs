@@ -21,22 +21,27 @@ namespace Server
             string hashedPassword = HashPassword(aa.Username, aa.Password);
             AccountModel account = m_accountRepository.GetAccountByUsernameAndPasswordHash(aa.Username, hashedPassword);
 
-            AuthenticationAttempt_S2C.ResponseCode result;
+            AuthenticationAttempt_S2C response = new AuthenticationAttempt_S2C() { PlayerID = ID };
             if (account != null)
             {
-                result = LoadPlayer(account);
+                response.Result = LoadPlayer(account);
 
-                Warp(0, (float)m_player.X, (float)m_player.Y);
+                if (response.Result == AuthenticationAttempt_S2C.ResponseCode.OK)
+                {
+                    response.X = (float)m_player.X;
+                    response.Y = (float)m_player.Y;
+                    response.ZoneID = m_player.Map;
 
-                IsAuthenticated = true;
+                    IsAuthenticated = true;
+                }
             }
             else
             {
-                result = AuthenticationAttempt_S2C.ResponseCode.BadLogin;
+                response.Result = AuthenticationAttempt_S2C.ResponseCode.BadLogin;
                 Info("Login failed with username: {1} and password: {2}", ID, aa.Username, aa.Password);
             }
 
-            Respond(aa, new AuthenticationAttempt_S2C() { PlayerID = ID, Result = result });
+            Respond(aa, response);
         }
 
         private AuthenticationAttempt_S2C.ResponseCode LoadPlayer(AccountModel account)
@@ -49,8 +54,9 @@ namespace Server
                 m_player = player;
                 m_stats = m_playerRepository.GetPlayerStatsByPlayerID(player.PlayerID).ToDictionary(stat => (StatType)stat.StatID, stat => stat);
 
-                MaxHealth = Formulas.StaminaToHealth(m_stats[StatType.Stamina].StatValue);
-                MaxPower = 1000;
+                MaxHealth = Formulas.StaminaToHealth(GetStatValue(StatType.Stamina));
+                Level = Formulas.XPToLevel(GetStatValue(StatType.XP));
+                MaxPower = Formulas.LevelToPower(Level);
                 Health = (int)(MaxHealth * m_player.Health);
                 Power = (int)(MaxPower * m_player.Power);
 

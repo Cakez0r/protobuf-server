@@ -1,5 +1,7 @@
 ﻿using Data.NPCs;
 using Protocol;
+using Server.Abilities;
+using Server.Gameplay;
 using Server.Utility;
 using Server.Zones;
 using System;
@@ -39,6 +41,8 @@ namespace Server
         public int Power { get; private set; }
         public int MaxPower { get; private set; }
 
+        public int Level { get; private set; }
+
         public int? TargetID { get; private set; }
 
         public int TimeOnClient { get; private set; }
@@ -49,7 +53,7 @@ namespace Server
         {
             if (m_spellCastCancellationToken != null && (psu.X != Position.X || psu.Y != Position.Y))
             {
-                StopCasting(true);
+                StopCasting();
             }
 
             Rotation = psu.Rot;
@@ -77,6 +81,7 @@ namespace Server
             m_worldState.MaxHealth = MaxHealth;
             m_worldState.Power = Power;
             m_worldState.MaxPower = MaxPower;
+            m_worldState.XP = GetStatValue(StatType.XP);
 
             foreach (PlayerPeer player in CurrentZone.PlayersInZone)
             {
@@ -118,7 +123,7 @@ namespace Server
             Send(m_worldState);
         }
 
-        private void ApplyHealthDelta(int delta)
+        private void ApplyHealthDelta(int delta, ITargetable source = null)
         {
             int newHealth = Health + delta;
 
@@ -126,22 +131,24 @@ namespace Server
 
             if (Health == 0)
             {
-                Die();
+                Die(source);
             }
         }
 
-        private void ApplyPowerDelta(int delta)
+        private void ApplyPowerDelta(int delta, ITargetable source = null)
         {
             int power = Power + delta;
 
             Power = MathHelper.Clamp(power, 0, MaxPower);
         }
 
-        private void Die()
+        private void Die(ITargetable killer)
         {
             Health = MaxHealth;
             Power = MaxPower;
             Warp(0, (float)m_player.X, (float)m_player.Y);
+            StopCasting();
+            Info("Killed by {0}", killer == null ? "[Unknown]" : killer.Name);
         }
 
         private void ChangeZone(int newZoneID)

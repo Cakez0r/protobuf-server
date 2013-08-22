@@ -3,6 +3,7 @@ using Data.Players;
 using Protocol;
 using Server.Abilities;
 using Server.Gameplay;
+using Server.NPC;
 using Server.Utility;
 using System;
 using System.Collections.Generic;
@@ -61,6 +62,10 @@ namespace Server
                 {
                     result = UseAbilityResult.InvalidTarget;
                 }
+                else if (target is NPCInstance && abilityModel.AbilityType == AbilityModel.EAbilityType.HELP)
+                {
+                    result = UseAbilityResult.InvalidTarget;
+                }
                 else if (Vector2.DistanceSquared(target.Position, Position) > Math.Pow(abilityModel.Range, 2))
                 {
                     result = UseAbilityResult.OutOfRange;
@@ -106,10 +111,10 @@ namespace Server
 
         private void Handle_StopCasting(StopCasting sc)
         {
-            StopCasting(false);
+            StopCasting();
         }
 
-        private void StopCasting(bool notifyClient)
+        private void StopCasting()
         {
             if (m_spellCastCancellationToken != null)
             {
@@ -131,8 +136,8 @@ namespace Server
             }
             else
             {
-                ApplyHealthDelta(ability.Ability.SourceHealthDelta);
-                ApplyPowerDelta(ability.Ability.SourcePowerDelta);
+                ApplyHealthDelta(ability.Ability.SourceHealthDelta, this);
+                ApplyPowerDelta(ability.Ability.SourcePowerDelta, this);
                 result = UseAbilityResult.Completed;
             }
 
@@ -152,12 +157,50 @@ namespace Server
                 {
                     result = UseAbilityResult.Completed;
 
-                    ApplyHealthDelta(ability.Ability.TargetHealthDelta);
-                    ApplyPowerDelta(ability.Ability.TargetPowerDelta);
+                    int levelBonus = ability.Source.Level * 5;
+                    if (ability.Ability.AbilityType == AbilityModel.EAbilityType.HARM)
+                    {
+                        levelBonus *= -1;
+                    }
+
+                    ApplyHealthDelta(ability.Ability.TargetHealthDelta + levelBonus, ability.Source);
+
+                    ApplyPowerDelta(ability.Ability.TargetPowerDelta, ability.Source);
                 }
 
                 return result;
             });
+        }
+
+        public void AwardXP(float xp)
+        {
+            Fiber.Enqueue(() =>
+            {
+                Trace("Awarded {0}xp", xp);
+
+                float newXP =  GetStatValue(StatType.XP) + xp;
+                m_stats[StatType.XP].StatValue = newXP;
+
+                int newLevel = Formulas.XPToLevel(newXP);
+                if (newLevel > Level)
+                {
+                    Level = newLevel;
+                    MaxPower = Formulas.LevelToPower(Level);
+                    Info("Dinged level {0}", newLevel);
+                }
+            });
+        }
+
+        private float GetStatValue(StatType statType)
+        {
+            PlayerStatModel stat;
+
+            if (m_stats.TryGetValue(statType, out stat))
+            {
+                return stat.StatValue;
+            }
+
+            return 0;
         }
     }
 }

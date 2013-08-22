@@ -93,7 +93,7 @@ namespace Server
                     Y = Position.Y
                 };
 
-                ApplyPowerDelta((int)(MaxPower * 0.001f));
+                ApplyPowerDelta(Math.Max((int)(MaxPower * 0.001f * Level), 1));
 
                 if (CurrentZone != null)
                 {
@@ -153,7 +153,7 @@ namespace Server
 
         private void Save(SaveFlags saveFlags)
         {
-            if (!IsAuthenticated)
+            if (!IsAuthenticated || CurrentZone == null)
             {
                 return;
             }
