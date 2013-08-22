@@ -32,6 +32,8 @@ namespace Server
                     response.Y = (float)m_player.Y;
                     response.ZoneID = m_player.Map;
 
+                    ChangeZone(response.ZoneID);
+
                     IsAuthenticated = true;
                 }
             }
