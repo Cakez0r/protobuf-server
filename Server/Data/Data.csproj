@@ -63,6 +63,7 @@
     <Compile Include="Abilities\PostgresAbilityRepository.cs" />
     <Compile Include="Accounts\AccountModel.cs" />
     <Compile Include="Accounts\IAccountRepository.cs" />
+    <Compile Include="Accounts\MockAccountRepository.cs" />
     <Compile Include="Accounts\PostgresAccountRepository.cs" />
     <Compile Include="NPCs\INPCRepository.cs" />
     <Compile Include="NPCs\NPCBehaviourModel.cs" />
@@ -72,6 +73,7 @@
     <Compile Include="NPCs\NPCStatModel.cs" />
     <Compile Include="NPCs\PostgresNPCRepository.cs" />
     <Compile Include="Players\IPlayerRepository.cs" />
+    <Compile Include="Players\MockPlayerRepository.cs" />
     <Compile Include="Players\PlayerModel.cs" />
     <Compile Include="Players\PlayerStatModel.cs" />
     <Compile Include="Players\PostgresPlayerRepository.cs" />
