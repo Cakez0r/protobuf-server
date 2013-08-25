@@ -117,7 +117,7 @@ namespace Server.Zones
 
         public void GatherNPCStatesForPlayer(PlayerPeer player, List<NPCStateUpdate> playerNPCStates)
         {
-            Vector2 playerPosition = new Vector2(player.LatestStateUpdate.X, player.LatestStateUpdate.Y);
+            Vector2 playerPosition = player.Position;
             m_npcLock.EnterReadLock();
             foreach (NPCInstance npc in m_npcs.Values)
             {

@@ -92,7 +92,7 @@ namespace Server
                 if (player.ID != ID && player.LatestStateUpdate != null)
                 {
                     PlayerStateUpdate_S2C stateUpdate = player.LatestStateUpdate;
-                    float distanceSqr = Vector2.DistanceSquared(Position, new Vector2(stateUpdate.X, stateUpdate.Y));
+                    float distanceSqr = Vector2.DistanceSquared(Position, player.Position);
                     if (distanceSqr <= RELEVANCE_DISTANCE_SQR)
                     {
                         m_worldState.PlayerStates.Add(stateUpdate);
