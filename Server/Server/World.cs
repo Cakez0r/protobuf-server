@@ -89,6 +89,7 @@ namespace Server
                 if (!player.IsConnected)
                 {
                     s_log.Info("[{0}] is disconnected and will be removed", player.ID);
+                    PlayerPeer.LoggedInAccounts[player.AccountID] = false;
                     player.Dispose();
                     PlayerPeer removedPlayer = default(PlayerPeer);
                     m_players.TryRemove(kvp.Key, out removedPlayer);

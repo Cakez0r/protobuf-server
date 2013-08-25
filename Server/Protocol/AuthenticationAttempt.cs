@@ -19,7 +19,8 @@ namespace Protocol
         {
             Error = 0,
             OK = 1,
-            BadLogin = 2
+            BadLogin = 2,
+            AlreadyLoggedIn = 3
         }
 
         [ProtoMember(1)]

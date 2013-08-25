@@ -3,6 +3,7 @@ using Data.Players;
 using Protocol;
 using Server.Gameplay;
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -16,6 +17,14 @@ namespace Server
 
         private PlayerModel m_player;
 
+        private static ConcurrentDictionary<int, bool> s_loggedInAccounts = new ConcurrentDictionary<int, bool>();
+        public static ConcurrentDictionary<int, bool> LoggedInAccounts 
+        {
+            get { return s_loggedInAccounts; }
+        }
+
+        public int AccountID { get; private set; }
+
         private void Handle_AuthenticationAttempt(AuthenticationAttempt_C2S aa)
         {
             string hashedPassword = HashPassword(aa.Username, aa.Password);
@@ -24,17 +33,28 @@ namespace Server
             AuthenticationAttempt_S2C response = new AuthenticationAttempt_S2C() { PlayerID = ID };
             if (account != null)
             {
-                response.Result = LoadPlayer(account);
-
-                if (response.Result == AuthenticationAttempt_S2C.ResponseCode.OK)
+                bool alreadyOnline = false;
+                if (s_loggedInAccounts.TryGetValue(account.AccountID, out alreadyOnline) && alreadyOnline)
                 {
-                    response.X = (float)m_player.X;
-                    response.Y = (float)m_player.Y;
-                    response.ZoneID = m_player.Map;
+                    Info("Username: {0} is already online but tried to log in", aa.Username);
+                    response.Result = AuthenticationAttempt_S2C.ResponseCode.AlreadyLoggedIn;
+                }
+                else
+                {
+                    response.Result = LoadPlayer(account);
 
-                    ChangeZone(response.ZoneID);
+                    if (response.Result == AuthenticationAttempt_S2C.ResponseCode.OK)
+                    {
+                        AccountID = account.AccountID;
+                        s_loggedInAccounts[account.AccountID] = true;
+                        response.X = (float)m_player.X;
+                        response.Y = (float)m_player.Y;
+                        response.ZoneID = m_player.Map;
 
-                    IsAuthenticated = true;
+                        ChangeZone(response.ZoneID);
+
+                        IsAuthenticated = true;
+                    }
                 }
             }
             else
