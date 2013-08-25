@@ -33,21 +33,23 @@ namespace Server
 
         public Vector2 Position { get; private set; }
         public Vector2 Velocity { get; private set; }
-        public float Rotation { get; private set; }
+        public byte Rotation { get; private set; }
 
-        public int Health { get; private set; }
-        public int MaxHealth { get; private set; }
+        public ushort Health { get; private set; }
+        public ushort MaxHealth { get; private set; }
 
-        public int Power { get; private set; }
-        public int MaxPower { get; private set; }
+        public ushort Power { get; private set; }
+        public ushort MaxPower { get; private set; }
 
-        public int Level { get; private set; }
+        public byte Level { get; private set; }
 
         public int? TargetID { get; private set; }
 
         public int TimeOnClient { get; private set; }
 
         public Zone CurrentZone { get; private set; }
+
+        private PlayerStateUpdate_C2S m_lastPlayerStateReceived = new PlayerStateUpdate_C2S();
 
         private void Handle_PlayerStateUpdate(PlayerStateUpdate_C2S psu)
         {
@@ -57,10 +59,12 @@ namespace Server
             }
 
             Rotation = psu.Rot;
-            Position = new Vector2(psu.X, psu.Y);
-            Velocity = new Vector2(psu.VelX, psu.VelY);
+            Position = new Vector2(Compression.UShortToPosition(psu.X), Compression.UShortToPosition(psu.Y));
+            Velocity = new Vector2(Compression.ShortToVelocity(psu.VelX), Compression.ShortToVelocity(psu.VelY));
             TimeOnClient = psu.Time;
             TargetID = psu.TargetID;
+
+            m_lastPlayerStateReceived = psu;
         }
 
         private void BuildAndSendWorldStateUpdate()
@@ -127,7 +131,7 @@ namespace Server
         {
             int newHealth = Health + delta;
 
-            Health = MathHelper.Clamp(newHealth, 0, MaxHealth);
+            Health = (ushort)MathHelper.Clamp(newHealth, 0, MaxHealth);
 
             if (Health == 0)
             {
@@ -139,7 +143,7 @@ namespace Server
         {
             int power = Power + delta;
 
-            Power = MathHelper.Clamp(power, 0, MaxPower);
+            Power = (ushort)MathHelper.Clamp(power, 0, MaxPower);
         }
 
         private void Die(ITargetable killer)

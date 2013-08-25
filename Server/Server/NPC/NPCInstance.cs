@@ -52,7 +52,7 @@ namespace Server.NPC
             private set;
         }
 
-        public float Rotation
+        public byte Rotation
         {
             get;
             set;
@@ -64,7 +64,7 @@ namespace Server.NPC
             private set;
         }
 
-        public int Level
+        public byte Level
         {
             get { return 1; }
         }
@@ -84,11 +84,10 @@ namespace Server.NPC
 
             StateUpdate = new NPCStateUpdate()
             {
-                Rotation = npcSpawn.Rotation,
+                Rot = Compression.RotationToByte(npcSpawn.Rotation),
                 NPCID = npc.NPCID,
                 NPCInstanceID = ID,
-                Health = Health,
-                MaxHealth = MaxHealth
+                Health = (ushort)Health,
             };
 
             m_behaviours = behaviours;
@@ -106,13 +105,12 @@ namespace Server.NPC
                 behaviour.Update(dt, this);
             }
 
-            StateUpdate.X = Position.X;
-            StateUpdate.Y = Position.Y;
-            StateUpdate.Rot = Rotation;
-            StateUpdate.VelX = Velocity.X;
-            StateUpdate.VelY = Velocity.Y;
-            StateUpdate.Health = Health;
-            StateUpdate.MaxHealth = MaxHealth;
+            StateUpdate.X = Compression.PositionToUShort(Position.X);
+            StateUpdate.Y = Compression.PositionToUShort(Position.Y);
+            StateUpdate.Rot = Compression.RotationToByte(Rotation);
+            StateUpdate.VelX = Compression.VelocityToShort(Velocity.X);
+            StateUpdate.VelY = Compression.VelocityToShort(Velocity.Y);
+            StateUpdate.Health = (ushort)Health;
         }
 
         public void ApplyHealthDelta(int delta, ITargetable source = null)
@@ -143,7 +141,7 @@ namespace Server.NPC
         private void Respawn()
         {
             Position = new Vector2((float)NPCSpawnModel.X, (float)NPCSpawnModel.Y);
-            Rotation = NPCSpawnModel.Rotation;
+            Rotation = Compression.RotationToByte(NPCSpawnModel.Rotation);
 
             ID = IDGenerator.GetNextID();
 

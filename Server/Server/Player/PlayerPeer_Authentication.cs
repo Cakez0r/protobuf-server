@@ -76,11 +76,11 @@ namespace Server
                 m_player = player;
                 m_stats = m_playerRepository.GetPlayerStatsByPlayerID(player.PlayerID).ToDictionary(stat => (StatType)stat.StatID, stat => stat);
 
-                MaxHealth = Formulas.StaminaToHealth(GetStatValue(StatType.Stamina));
+                MaxHealth = (ushort)Formulas.StaminaToHealth(GetStatValue(StatType.Stamina));
                 Level = Formulas.XPToLevel(GetStatValue(StatType.XP));
-                MaxPower = Formulas.LevelToPower(Level);
-                Health = (int)(MaxHealth * m_player.Health);
-                Power = (int)(MaxPower * m_player.Power);
+                MaxPower = (ushort)Formulas.LevelToPower(Level);
+                Health = (ushort)(MaxHealth * m_player.Health);
+                Power = (ushort)(MaxPower * m_player.Power);
 
                 Introduction = new PlayerIntroduction() { PlayerID = ID, Name = player.Name };
 

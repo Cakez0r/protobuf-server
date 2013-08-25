@@ -57,6 +57,7 @@
     <Compile Include="AbilityUseStarted.cs" />
     <Compile Include="AuthenticationAttempt.cs" />
     <Compile Include="ChatMessage.cs" />
+    <Compile Include="Compression.cs" />
     <Compile Include="NPCIntroduction.cs" />
     <Compile Include="NPCStateUpdate.cs" />
     <Compile Include="Ping.cs" />

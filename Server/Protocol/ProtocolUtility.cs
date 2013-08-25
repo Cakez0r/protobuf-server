@@ -65,6 +65,7 @@ namespace Protocol
                 }
 
                 RuntimeTypeModel.Default.CompileInPlace();
+                RuntimeTypeModel.Default.AutoCompile = true;
             }
         }
     }

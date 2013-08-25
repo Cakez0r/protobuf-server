@@ -8,7 +8,7 @@ namespace Server.Abilities
     {
         string Name { get; }
         Vector2 Position { get; }
-        int Level { get; }
+        byte Level { get; }
 
         UseAbilityResult AcceptAbilityAsSource(AbilityInstance abilityInstance);
         Task<UseAbilityResult> AcceptAbilityAsTarget(AbilityInstance abilityInstance);

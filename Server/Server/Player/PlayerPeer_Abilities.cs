@@ -181,11 +181,11 @@ namespace Server
                 float newXP =  GetStatValue(StatType.XP) + xp;
                 m_stats[StatType.XP].StatValue = newXP;
 
-                int newLevel = Formulas.XPToLevel(newXP);
+                byte newLevel = Formulas.XPToLevel(newXP);
                 if (newLevel > Level)
                 {
                     Level = newLevel;
-                    MaxPower = Formulas.LevelToPower(Level);
+                    MaxPower = (ushort)Formulas.LevelToPower(Level);
                     Info("Dinged level {0}", newLevel);
                 }
             });

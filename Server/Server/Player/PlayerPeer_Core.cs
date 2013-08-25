@@ -81,19 +81,17 @@ namespace Server
                 {
                     PlayerID = ID,
                     Health = Health,
-                    MaxHealth = MaxHealth,
                     Power = Power,
-                    MaxPower = MaxPower,
                     Rot = Rotation,
                     TargetID = TargetID,
                     Time = TimeOnClient,
-                    VelX = Velocity.X,
-                    VelY = Velocity.Y,
-                    X = Position.X,
-                    Y = Position.Y
+                    VelX = m_lastPlayerStateReceived.VelX,
+                    VelY = m_lastPlayerStateReceived.VelY,
+                    X = m_lastPlayerStateReceived.X,
+                    Y = m_lastPlayerStateReceived.Y
                 };
 
-                ApplyPowerDelta(Math.Max((int)(MaxPower * 0.001f * Level), 1));
+                ApplyPowerDelta(1);
 
                 if (CurrentZone != null)
                 {
