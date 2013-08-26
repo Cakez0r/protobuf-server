@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Server.Abilities
 {
-    public class AbilityInstance
+    public sealed class AbilityInstance : IDisposable
     {
         public AbilityModel Ability { get; private set; }
 
@@ -92,6 +92,12 @@ namespace Server.Abilities
             }
 
             return result;
+        }
+
+        public void Dispose()
+        {
+            m_cancellationTokenSource.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

@@ -72,6 +72,7 @@ namespace Server
                 }
                 else
                 {
+                    m_lastAbility.Dispose();
                     m_lastAbility = new AbilityInstance(this, target, abilityModel);
 
                     if (m_lastAbility.State == AbilityState.Casting)

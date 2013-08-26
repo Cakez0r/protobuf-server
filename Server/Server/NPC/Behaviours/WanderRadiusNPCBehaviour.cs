@@ -14,25 +14,16 @@ namespace Server.NPC.Behaviours
 
         private Random m_rng;
 
-        public WanderRadiusNPCBehaviour()
-        {
-            m_rng = new Random(GetHashCode());
-        }
-
         public void Initialise(IReadOnlyDictionary<string, string> vars)
         {
+            m_rng = new Random(GetHashCode());
             m_radius = float.Parse(vars["Radius"]);
             m_walkSpeed = float.Parse(vars["Speed"]);
         }
 
         public void Update(TimeSpan dt, NPCInstance npc)
         {
-            if (m_target == null)
-            {
-                m_target = GetRandomTarget(new Vector2((float)npc.NPCSpawnModel.X, (float)npc.NPCSpawnModel.Y), m_radius);
-            }
-
-            if (Vector2.DistanceSquared(m_target.Value, npc.Position) < 4)
+            if (m_target == null || Vector2.DistanceSquared(m_target.Value, npc.Position) < 4)
             {
                 m_target = GetRandomTarget(new Vector2((float)npc.NPCSpawnModel.X, (float)npc.NPCSpawnModel.Y), m_radius);
             }

@@ -28,13 +28,9 @@ namespace Server
 
         private ConcurrentStack<byte[]> m_bufferPool = new ConcurrentStack<byte[]>();
 
-        public int ID
-        {
-            get;
-            private set;
-        }
+        private bool m_disposed;
 
-        public bool Disposed
+        public int ID
         {
             get;
             private set;
@@ -91,7 +87,7 @@ namespace Server
 
         public void Disconnect()
         {
-            if (!Disposed && m_socket.Connected)
+            if (!m_disposed && m_socket.Connected)
             {
                 s_log.Debug("[{0}] Disconnecting", ID);
                 m_socket.Disconnect(false);
@@ -108,7 +104,15 @@ namespace Server
         {
             int? packetCode = ProtocolUtility.GetPacketTypeCode(p.GetType());
 
-            if (packetCode != null)
+            if (m_disposed)
+            {
+                s_log.Warn("Tried to send a packet but this peer has been disposed.");
+            }
+            else if (packetCode == null)
+            {
+                s_log.Warn("Tried to send a type that isn't part of the protocol: " + p.GetType());
+            }
+            else
             {
                 try
                 {
@@ -139,10 +143,6 @@ namespace Server
                     Disconnect();
                 }
             }
-            else
-            {
-                s_log.Warn("Tried to send a type that isn't part of the protocol: " + p.GetType());
-            }
         }
 
         private void SendCompleted(object o, SocketAsyncEventArgs eventArgs)
@@ -167,7 +167,7 @@ namespace Server
         {
             try
             {
-                if (!Disposed && !m_socket.ReceiveAsync(eventArgs))
+                if (!m_disposed && !m_socket.ReceiveAsync(eventArgs))
                 {
                     ReceiveCompleted(null, eventArgs);
                 }
@@ -255,16 +255,26 @@ namespace Server
             }
         }
 
-        public virtual void Dispose()
+        public void Dispose()
         {
-            m_socket.Dispose();
-            byte[] buffer = default(byte[]);
-            while (m_bufferPool.TryPop(out buffer))
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!m_disposed)
             {
-                s_buffers.ReturnBuffer(buffer);
+                m_socket.Dispose();
+                byte[] buffer = default(byte[]);
+                while (m_bufferPool.TryPop(out buffer))
+                {
+                    s_buffers.ReturnBuffer(buffer);
+                }
+                m_fiber.Stop();
+                m_receiveBuffer.Dispose();
             }
-            m_fiber.Stop();
-            Disposed = true;
+            m_disposed = true;
         }
 
         private byte[] GetBuffer()

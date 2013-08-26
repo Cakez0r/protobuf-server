@@ -94,7 +94,7 @@ namespace Server
                     Y = m_compressedY
                 };
 
-                if (CurrentZone != null)
+                if (CurrentZone != null && LatestStateUpdate != null)
                 {
                     BuildAndSendWorldStateUpdate();
                 }
@@ -136,7 +136,7 @@ namespace Server
             }
         }
 
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
             Fiber.Enqueue(() =>
             {
@@ -148,14 +148,17 @@ namespace Server
                     {
                         CurrentZone.RemoveFromZone(this);
                     }
+
                 }
                 catch (Exception ex)
                 {
                     Warn("Failed to dispose player: {0}", ex);
                 }
 
-                base.Dispose();
+                base.Dispose(true);
             });
+
+            m_lastAbility.Dispose();
         }
 
         private void Save(SaveFlags saveFlags)

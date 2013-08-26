@@ -22,7 +22,7 @@ namespace ServerBenchmark
 
         public TestPeer(Socket s) : base(s)
         {
-            m_rand = new Random(GetHashCode());
+            m_rand = new Random(s.GetHashCode());
 
             m_position = GetRandomTarget();
 

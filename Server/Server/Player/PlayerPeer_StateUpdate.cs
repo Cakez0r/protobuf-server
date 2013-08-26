@@ -74,11 +74,6 @@ namespace Server
 
         private void BuildAndSendWorldStateUpdate()
         {
-            if (LatestStateUpdate == null)
-            {
-                return;
-            }
-
             m_worldState.CurrentServerTime = Environment.TickCount;
             m_worldState.Health = Health;
             m_worldState.MaxHealth = MaxHealth;

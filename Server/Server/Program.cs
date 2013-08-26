@@ -70,20 +70,21 @@ namespace Server
             s_log.Info("Precaching abilities...");
             abilityRepository.GetAbilities();
 
-            s_log.Info("Creating world...");
-            World world = new World(accountRepository, npcRepository, playerRepository, statsRepository, abilityRepository);
-
             s_log.Info("Initialising serializer...");
             ProtocolUtility.InitialiseSerializer();
 
-            TcpListener listener = new TcpListener(IPAddress.Any, config.Port);
-            listener.Start();
-            s_log.Info("Listening for connections on " + listener.LocalEndpoint.ToString());
-
-            while (true)
+            s_log.Info("Creating world...");
+            using (World world = new World(accountRepository, npcRepository, playerRepository, statsRepository, abilityRepository))
             {
-                Socket socket = listener.AcceptSocket();
-                world.AcceptSocket(socket);
+                TcpListener listener = new TcpListener(IPAddress.Any, config.Port);
+                listener.Start();
+                s_log.Info("Listening for connections on " + listener.LocalEndpoint.ToString());
+
+                while (true)
+                {
+                    Socket socket = listener.AcceptSocket();
+                    world.AcceptSocket(socket);
+                }
             }
         }
     }

@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace Server
 {
-    public class World
+    public sealed class World : IDisposable
     {
         private const int TARGET_UPDATE_TIME_MS = 50;
         private const int STATS_UPDATE_INTERVAL_MS = 1000;
@@ -40,7 +40,7 @@ namespace Server
 
         private int m_lastWorldUpdateLength;
 
-        PerformanceCounter cpuCounter = new PerformanceCounter();
+        PerformanceCounter m_cpuCounter = new PerformanceCounter();
 
         private long m_lastBytesIn = 0;
         private long m_lastBytesOut = 0;
@@ -59,9 +59,9 @@ namespace Server
 
             m_zones = BuildZones(m_npcRepository);
 
-            cpuCounter.CategoryName = "Processor";
-            cpuCounter.CounterName = "% Processor Time";
-            cpuCounter.InstanceName = "_Total";
+            m_cpuCounter.CategoryName = "Processor";
+            m_cpuCounter.CounterName = "% Processor Time";
+            m_cpuCounter.InstanceName = "_Total";
 
             m_fiber.Enqueue(Update, false);
             m_fiber.Enqueue(StatsUpdate, false);
@@ -112,7 +112,7 @@ namespace Server
 
         private void StatsUpdate()
         {
-            m_statsRepository.CPUUsage = (int)cpuCounter.NextValue();
+            m_statsRepository.CPUUsage = (int)m_cpuCounter.NextValue();
 
             long bytesIn = NetPeer.TotalBytesIn;
             long bytesOut = NetPeer.TotalBytesOut;
@@ -153,6 +153,11 @@ namespace Server
                 zones.Add(i, new Zone(i, m_npcRepository, m_npcFactory));
             }
             return zones;
+        }
+
+        public void Dispose()
+        {
+            m_cpuCounter.Dispose();
         }
     }
 }
