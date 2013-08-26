@@ -20,6 +20,7 @@ namespace Server.NPC
         public NPCModel NPCModel { get; private set; }
         public NPCSpawnModel NPCSpawnModel { get; private set; }
         public NPCStateUpdate StateUpdate { get; private set; }
+        public NPCIntroduction Introduction { get; private set; }
 
         private List<INPCBehaviour> m_behaviours;
 
@@ -54,6 +55,17 @@ namespace Server.NPC
             NPCSpawnModel = npcSpawn;
             m_stats = stats;
             m_fiber = fiber;
+
+            Introduction = new NPCIntroduction()
+            {
+                Level = 1,
+                MaxHealth = 200,
+                MaxPower = 200,
+                Model = npc.Model,
+                Name = npc.Name,
+                NPCID = npc.NPCID,
+                Scale = npc.Scale
+            };
 
             Position = new Vector2((float)npcSpawn.X, (float)npcSpawn.Y);
             ID = IDGenerator.GetNextID();
@@ -129,8 +141,6 @@ namespace Server.NPC
         {
             Position = new Vector2((float)NPCSpawnModel.X, (float)NPCSpawnModel.Y);
             Rotation = Compression.RotationToByte(NPCSpawnModel.Rotation);
-
-            ID = IDGenerator.GetNextID();
 
             Health = MaxHealth;
             IsDead = false;

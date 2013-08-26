@@ -87,7 +87,6 @@
     <Compile Include="Utility\IDGenerator.cs" />
     <Compile Include="Utility\MathHelper.cs" />
     <Compile Include="Utility\ObjectRouter.cs" />
-    <Compile Include="Utility\Pool.cs" />
     <Compile Include="Utility\Vector2.cs" />
     <Compile Include="World.cs" />
     <Compile Include="Zones\Zone.cs" />

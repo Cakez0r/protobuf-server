@@ -62,6 +62,5 @@ namespace Protocol
 
         [ProtoMember(11)]
         public ushort CastingEffect { get; set; }
-
     }
 }

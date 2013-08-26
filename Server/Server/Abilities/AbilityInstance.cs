@@ -80,9 +80,10 @@ namespace Server.Abilities
                     Source.ApplyHealthDelta(Ability.SourceHealthDelta, Source);
                     Source.ApplyPowerDelta(Ability.SourcePowerDelta, Source);
 
-                    State = AbilityState.Finished;
                     result = UseAbilityResult.OK;
                 }
+
+                State = AbilityState.Finished;
             }
             catch (TaskCanceledException)
             {

@@ -33,7 +33,6 @@ namespace Server.Zones
 
         private List<NPCSpawnModel> m_npcSpawns;
 
-        private ReaderWriterLockSlim m_npcLock = new ReaderWriterLockSlim();
         private Dictionary<int, NPCInstance> m_npcs = new Dictionary<int, NPCInstance>();
 
         private DateTime m_lastUpdateTime = DateTime.Now;
@@ -91,12 +90,10 @@ namespace Server.Zones
             m_zoneUpdateTimer.Restart();
             TimeSpan dt = DateTime.Now - m_lastUpdateTime;
             
-            m_npcLock.EnterWriteLock();
-            foreach (NPCInstance npc in m_npcs.Values)
+            foreach (var kvp in m_npcs)
             {
-                npc.Update(dt);
+                kvp.Value.Update(dt);
             }
-            m_npcLock.ExitWriteLock();
 
             m_lastUpdateTime = DateTime.Now;
             m_zoneUpdateTimer.Stop();
@@ -115,12 +112,14 @@ namespace Server.Zones
             }
         }
 
-        public void GatherNPCStatesForPlayer(PlayerPeer player, List<NPCStateUpdate> playerNPCStates)
+        public List<NPCStateUpdate> GatherNPCStatesForPlayer(PlayerPeer player)
         {
             Vector2 playerPosition = player.Position;
-            m_npcLock.EnterReadLock();
-            foreach (NPCInstance npc in m_npcs.Values)
+            List<NPCStateUpdate> result = new List<NPCStateUpdate>();
+
+            foreach (var kvp in m_npcs)
             {
+                NPCInstance npc = kvp.Value;
                 if (npc.IsDead)
                 {
                     continue;
@@ -128,10 +127,11 @@ namespace Server.Zones
 
                 if (Vector2.DistanceSquared(playerPosition, npc.Position) <= RELEVANCE_DISTANCE_SQR)
                 {
-                    playerNPCStates.Add(npc.StateUpdate);
+                    result.Add(npc.StateUpdate);
                 }
             }
-            m_npcLock.ExitReadLock();
+
+            return result;
         }
 
         public void AbilityUsed(AbilityInstance ability)

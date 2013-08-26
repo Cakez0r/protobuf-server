@@ -16,13 +16,7 @@ namespace Server
 
         private Dictionary<int, Zone> m_zones;
 
-        private WorldState m_worldState = new WorldState() 
-        { 
-            PlayerStates = new List<PlayerStateUpdate_S2C>(),
-            PlayerIntroductions = new List<PlayerIntroduction>(),
-            NPCStates = new List<NPCStateUpdate>(),
-            NPCIntroductions = new List<NPCIntroduction>()
-        };
+        private WorldState m_worldState = new WorldState();
 
         private Dictionary<int, PlayerIntroduction> m_introducedPlayers = new Dictionary<int, PlayerIntroduction>();
         public PlayerIntroduction Introduction { get; private set; }
@@ -32,8 +26,7 @@ namespace Server
         private HashSet<int> m_introducedNPCs = new HashSet<int>();
         private INPCRepository m_npcRepository;
 
-        public Vector2 m_position;
-        public Vector2 Position { get { return m_position; } }
+        public Vector2 Position { get; private set; }
         public Vector2 Velocity { get; private set; }
         public byte Rotation { get; private set; }
 
@@ -58,6 +51,8 @@ namespace Server
         private ushort m_compressedX;
         private ushort m_compressedY;
 
+        private int m_lastPlayerStateCount = 0;
+
         private void Handle_PlayerStateUpdate(PlayerStateUpdate_C2S psu)
         {
             if (m_lastAbility.State == AbilityState.Casting && (psu.X != m_compressedX || psu.Y != m_compressedY))
@@ -66,7 +61,7 @@ namespace Server
             }
 
             Rotation = psu.Rot;
-            m_position = new Vector2(Compression.UShortToPosition(psu.X), Compression.UShortToPosition(psu.Y));
+            Position = new Vector2(Compression.UShortToPosition(psu.X), Compression.UShortToPosition(psu.Y));
             Velocity = new Vector2(Compression.ShortToVelocity(psu.VelX), Compression.ShortToVelocity(psu.VelY));
             TimeOnClient = psu.Time;
             TargetID = psu.TargetID;
@@ -84,12 +79,6 @@ namespace Server
                 return;
             }
 
-            m_worldState.PlayerStates.Clear();
-            m_worldState.PlayerIntroductions.Clear();
-
-            m_worldState.NPCStates.Clear();
-            m_worldState.NPCIntroductions.Clear();
-
             m_worldState.CurrentServerTime = Environment.TickCount;
             m_worldState.Health = Health;
             m_worldState.MaxHealth = MaxHealth;
@@ -97,46 +86,75 @@ namespace Server
             m_worldState.MaxPower = MaxPower;
             m_worldState.XP = GetStatValue(StatType.XP);
 
+            m_worldState.PlayerStates = null;
+            m_worldState.PlayerIntroductions = null;
+            m_worldState.NPCStates = null;
+            m_worldState.NPCIntroductions = null;
+
             ReadOnlyCollection<PlayerPeer> playersInZone = CurrentZone.PlayersInZone;
-            float distanceSqr = 0.0f;
             for (int i = 0; i < playersInZone.Count; i++) 
             {
                 PlayerPeer player = playersInZone[i];
                 if (player.ID != ID && player.LatestStateUpdate != null)
                 {
                     PlayerStateUpdate_S2C stateUpdate = player.LatestStateUpdate;
-                    Vector2.DistanceSquared(ref m_position, ref player.m_position, out distanceSqr);
-                    if (distanceSqr <= RELEVANCE_DISTANCE_SQR)
+                    if (Vector2.DistanceSquared(Position, player.Position) <= RELEVANCE_DISTANCE_SQR)
                     {
-                        m_worldState.PlayerStates.Add(stateUpdate);
-                        if (!m_introducedPlayers.ContainsKey(stateUpdate.PlayerID) || m_introducedPlayers[stateUpdate.PlayerID] != player.Introduction)
+                        if (m_worldState.PlayerStates == null)
                         {
-                            m_worldState.PlayerIntroductions.Add(player.Introduction);
-                            m_introducedPlayers[stateUpdate.PlayerID] = player.Introduction;
+                            m_worldState.PlayerStates = new List<PlayerStateUpdate_S2C>(m_lastPlayerStateCount);
+                        }
+
+                        m_worldState.PlayerStates.Add(stateUpdate);
+
+                        PlayerIntroduction introduction = player.Introduction;
+                        if (!m_introducedPlayers.ContainsKey(stateUpdate.PlayerID) || m_introducedPlayers[stateUpdate.PlayerID] != introduction)
+                        {
+                            if (m_worldState.PlayerIntroductions == null)
+                            {
+                                m_worldState.PlayerIntroductions = new List<PlayerIntroduction>();
+                            }
+
+                            m_worldState.PlayerIntroductions.Add(introduction);
+                            m_introducedPlayers[stateUpdate.PlayerID] = introduction;
                         }
                     }
                 }
             }
 
-            CurrentZone.GatherNPCStatesForPlayer(this, m_worldState.NPCStates);
+            m_lastPlayerStateCount = m_worldState.PlayerStates == null ? 0 : m_worldState.PlayerStates.Count;
 
-            foreach (NPCStateUpdate nsu in m_worldState.NPCStates)
+            m_worldState.NPCStates= CurrentZone.GatherNPCStatesForPlayer(this);
+
+            if (m_worldState.NPCStates != null)
             {
-                if (!m_introducedNPCs.Contains(nsu.NPCID))
+                foreach (NPCStateUpdate nsu in m_worldState.NPCStates)
                 {
-                    NPCModel npc = m_npcRepository.GetNPCByID(nsu.NPCID);
-                    NPCIntroduction introduction = new NPCIntroduction()
+                    if (!m_introducedNPCs.Contains(nsu.NPCID))
                     {
-                        Model = npc.Model,
-                        Name = npc.Name,
-                        NPCID = npc.NPCID,
-                        Scale = npc.Scale,
-                        Level = Level,
-                        MaxHealth = 100,
-                        MaxPower = 100
-                    };
-                    m_worldState.NPCIntroductions.Add(introduction);
-                    m_introducedNPCs.Add(nsu.NPCID);
+                        if (m_worldState.NPCIntroductions == null)
+                        {
+                            m_worldState.NPCIntroductions = new List<NPCIntroduction>();
+                        }
+
+                        NPCModel npcModel = m_npcRepository.GetNPCByID(nsu.NPCID);
+                        if (npcModel != null)
+                        {
+                            NPCIntroduction introduction = new NPCIntroduction()
+                            {
+                                Level = 1,
+                                MaxHealth = 200,
+                                MaxPower = 200,
+                                Model = npcModel.Model,
+                                Name = npcModel.Name,
+                                NPCID = npcModel.NPCID,
+                                Scale = npcModel.Scale
+                            };
+
+                            m_worldState.NPCIntroductions.Add(introduction);
+                            m_introducedNPCs.Add(nsu.NPCID);
+                        }
+                    }
                 }
             }
 

@@ -10,5 +10,8 @@ namespace Protocol
 
         [ProtoMember(2)]
         public int PlayerID { get; set; }
+
+        [ProtoMember(3)]
+        public byte Level { get; set; }
     }
 }

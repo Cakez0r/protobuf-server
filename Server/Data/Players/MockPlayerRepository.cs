@@ -61,7 +61,7 @@ namespace Data.Players
             return new List<PlayerStatModel>()
             {
                 new PlayerStatModel() { StatID = 1, StatValue = 250 },
-                new PlayerStatModel() { StatID = 2, StatValue = 5000 }
+                new PlayerStatModel() { StatID = 2, StatValue = 5000000 }
             };
         }
     }
