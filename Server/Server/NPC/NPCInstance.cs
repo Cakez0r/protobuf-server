@@ -34,40 +34,19 @@ namespace Server.NPC
             get { return string.Format("[NPC {0} {1}]", NPCModel.Name, ID); }
         }
 
-        public Vector2 Velocity
-        {
-            get;
-            set;
-        }
+        public Vector2 Velocity { get; set; }
 
-        public int Health
-        {
-            get;
-            private set;
-        }
+        public int Health { get; private set; }
+        public int MaxHealth { get; private set; }
 
-        public int MaxHealth
-        {
-            get;
-            private set;
-        }
+        public int Power { get; private set; }
+        public int MaxPower { get; private set; }
 
-        public byte Rotation
-        {
-            get;
-            set;
-        }
+        public byte Rotation { get; set; }
 
-        public bool Dead
-        {
-            get;
-            private set;
-        }
+        public bool IsDead { get; private set; }
 
-        public byte Level
-        {
-            get { return 1; }
-        }
+        public byte Level { get { return 1; } } 
 
         public NPCInstance(Fiber fiber, NPCModel npc, NPCSpawnModel npcSpawn, List<INPCBehaviour> behaviours, IReadOnlyDictionary<StatType, float> stats)
         {
@@ -87,7 +66,8 @@ namespace Server.NPC
                 Rot = Compression.RotationToByte(npcSpawn.Rotation),
                 NPCID = npc.NPCID,
                 NPCInstanceID = ID,
-                Health = (ushort)Health,
+                Health = Health,
+                Power = 100,
             };
 
             m_behaviours = behaviours;
@@ -95,7 +75,7 @@ namespace Server.NPC
 
         public void Update(TimeSpan dt)
         {
-            if (Dead)
+            if (IsDead)
             {
                 return;
             }
@@ -111,9 +91,10 @@ namespace Server.NPC
             StateUpdate.VelX = Compression.VelocityToShort(Velocity.X);
             StateUpdate.VelY = Compression.VelocityToShort(Velocity.Y);
             StateUpdate.Health = (ushort)Health;
+            StateUpdate.Time = Environment.TickCount;
         }
 
-        public void ApplyHealthDelta(int delta, ITargetable source = null)
+        public void ApplyHealthDelta(int delta, ITargetable source)
         {
             int newHealth = Health + delta;
 
@@ -125,15 +106,21 @@ namespace Server.NPC
             }
         }
 
+        public void ApplyPowerDelta(int delta, ITargetable source)
+        {
+            int newPower = Power + delta;
+
+            Power = MathHelper.Clamp(newPower, 0, MaxPower);
+        }
+
+        public void ApplyXPDelta(int delta, ITargetable source)
+        {
+        }
+
         private void Die(ITargetable killer)
         {
-            Dead = true;
+            IsDead = true;
             m_fiber.Schedule(Respawn, NPCSpawnModel.Frequency);
-
-            if (killer != null)
-            {
-                killer.AwardXP(GetStatValue(StatType.XP));
-            }
 
             Info("Killed by {0}", killer == null ? "[Unknown]" : killer.Name);
         }
@@ -146,7 +133,7 @@ namespace Server.NPC
             ID = IDGenerator.GetNextID();
 
             Health = MaxHealth;
-            Dead = false;
+            IsDead = false;
 
             Info("Respawned");
         }
@@ -154,14 +141,14 @@ namespace Server.NPC
         public UseAbilityResult AcceptAbilityAsSource(AbilityInstance ability)
         {
             ApplyHealthDelta(ability.Ability.SourceHealthDelta, this);
-            return UseAbilityResult.Completed;
+            return UseAbilityResult.OK;
         }
 
         public Task<UseAbilityResult> AcceptAbilityAsTarget(AbilityInstance ability)
         {
             return m_fiber.Enqueue(() =>
             {
-                if (Dead)
+                if (IsDead)
                 {
                     return UseAbilityResult.InvalidTarget;
                 }
@@ -177,7 +164,7 @@ namespace Server.NPC
                         levelBonus *= -1;
                     }
                     ApplyHealthDelta(ability.Ability.TargetHealthDelta + levelBonus, ability.Source);
-                    return UseAbilityResult.Completed;
+                    return UseAbilityResult.OK;
                 }
             });
         }

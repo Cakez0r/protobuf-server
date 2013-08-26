@@ -29,5 +29,16 @@ namespace Protocol
         [ProtoMember(8)]
         public int Health { get; set; }
 
+        [ProtoMember(9)]
+        public int Power { get; set; }
+
+        [ProtoMember(10)]
+        public int TargetID { get; set; }
+
+        [ProtoMember(11)]
+        public int Time { get; set; }
+
+        [ProtoMember(12)]
+        public int CastingEffect { get; set; }
     }
 }

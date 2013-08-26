@@ -83,8 +83,8 @@ namespace Server
                 LatestStateUpdate = new PlayerStateUpdate_S2C()
                 {
                     PlayerID = ID,
-                    Health = Health,
-                    Power = Power,
+                    Health = (ushort)Health,
+                    Power = (ushort)Power,
                     Rot = Rotation,
                     TargetID = TargetID,
                     Time = TimeOnClient,
@@ -93,8 +93,6 @@ namespace Server
                     X = m_compressedX,
                     Y = m_compressedY
                 };
-
-                ApplyPowerDelta(1);
 
                 if (CurrentZone != null)
                 {

@@ -121,14 +121,12 @@ namespace Server.Zones
             m_npcLock.EnterReadLock();
             foreach (NPCInstance npc in m_npcs.Values)
             {
-                if (npc.Dead)
+                if (npc.IsDead)
                 {
                     continue;
                 }
 
-                Vector2 npcPosition = new Vector2((float)npc.Position.X, (float)npc.Position.Y);
-                float distanceSqr = (playerPosition - npcPosition).LengthSquared();
-                if (distanceSqr <= RELEVANCE_DISTANCE_SQR)
+                if (Vector2.DistanceSquared(playerPosition, npc.Position) <= RELEVANCE_DISTANCE_SQR)
                 {
                     playerNPCStates.Add(npc.StateUpdate);
                 }
@@ -136,7 +134,7 @@ namespace Server.Zones
             m_npcLock.ExitReadLock();
         }
 
-        public void PlayerUsedAbility(AbilityInstance ability)
+        public void AbilityUsed(AbilityInstance ability)
         {
 
         }

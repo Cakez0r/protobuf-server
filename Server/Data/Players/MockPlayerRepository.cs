@@ -40,12 +40,12 @@ namespace Data.Players
             PlayerModel player = new PlayerModel()
             {
                 AccountID = m_rand.Next(),
-                Health = (float)m_rand.NextDouble(),
+                Health = 1,
                 Map = 0,
                 Money = 0,
                 Name = name,
                 PlayerID = m_rand.Next(),
-                Power = (float)m_rand.NextDouble(),
+                Power = 1,
                 Rotation = 0,
                 X = m_rand.Next(0, 6000),
                 Y = m_rand.Next(0, 6000)
@@ -60,8 +60,8 @@ namespace Data.Players
         {
             return new List<PlayerStatModel>()
             {
-                new PlayerStatModel() { StatID = 1, StatValue = 25 },
-                new PlayerStatModel() { StatID = 2, StatValue = 500 }
+                new PlayerStatModel() { StatID = 1, StatValue = 250 },
+                new PlayerStatModel() { StatID = 2, StatValue = 5000 }
             };
         }
     }

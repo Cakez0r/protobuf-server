@@ -66,6 +66,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Abilities\AbilityInstance.cs" />
+    <Compile Include="Abilities\AbilityState.cs" />
     <Compile Include="Abilities\ITargetable.cs" />
     <Compile Include="Abilities\UseAbilityResult.cs" />
     <Compile Include="Gameplay\Formulas.cs" />

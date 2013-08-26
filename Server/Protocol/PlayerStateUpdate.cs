@@ -15,7 +15,7 @@ namespace Protocol
         public byte Rot { get; set; }
 
         [ProtoMember(4)]
-        public int? TargetID { get; set; }
+        public int TargetID { get; set; }
 
         [ProtoMember(5)]
         public int Time { get; set; }
@@ -43,7 +43,7 @@ namespace Protocol
         public int PlayerID { get; set; }
 
         [ProtoMember(5)]
-        public int? TargetID { get; set; }
+        public int TargetID { get; set; }
 
         [ProtoMember(6)]
         public ushort Health { get; set; }
@@ -59,6 +59,9 @@ namespace Protocol
 
         [ProtoMember(10)]
         public ushort Power { get; set; }
+
+        [ProtoMember(11)]
+        public ushort CastingEffect { get; set; }
 
     }
 }

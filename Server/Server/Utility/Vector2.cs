@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace Server.Utility
 {
@@ -100,6 +101,7 @@ namespace Server.Utility
             result = (float)Math.Sqrt((v1 * v1) + (v2 * v2));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float DistanceSquared(Vector2 value1, Vector2 value2)
         {
             float v1 = value1.X - value2.X, v2 = value1.Y - value2.Y;

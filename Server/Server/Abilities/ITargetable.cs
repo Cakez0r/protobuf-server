@@ -8,10 +8,14 @@ namespace Server.Abilities
         string Name { get; }
         Vector2 Position { get; }
         byte Level { get; }
+        int Health { get; }
+        int Power { get; }
+        int MaxHealth { get; }
+        int MaxPower { get; }
+        bool IsDead { get; }
 
-        UseAbilityResult AcceptAbilityAsSource(AbilityInstance abilityInstance);
-        Task<UseAbilityResult> AcceptAbilityAsTarget(AbilityInstance abilityInstance);
-
-        void AwardXP(float xp);
+        void ApplyHealthDelta(int delta, ITargetable source);
+        void ApplyPowerDelta(int delta, ITargetable source);
+        void ApplyXPDelta(int delta, ITargetable source);
     }
 }

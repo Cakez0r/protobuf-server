@@ -54,7 +54,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AbilityUseStarted.cs" />
+    <Compile Include="AbilityUsedNotification.cs" />
     <Compile Include="AuthenticationAttempt.cs" />
     <Compile Include="ChatMessage.cs" />
     <Compile Include="Compression.cs" />
@@ -69,6 +69,7 @@
     <Compile Include="StopCasting.cs" />
     <Compile Include="TimeSync.cs" />
     <Compile Include="UseAbility.cs" />
+    <Compile Include="AbilityCastNotification.cs" />
     <Compile Include="Warp.cs" />
     <Compile Include="WorldState.cs" />
   </ItemGroup>

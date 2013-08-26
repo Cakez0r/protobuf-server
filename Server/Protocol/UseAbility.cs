@@ -17,8 +17,5 @@ namespace Protocol
     {
         [ProtoMember(1)]
         public int Result { get; set; }
-
-        [ProtoMember(2)]
-        public int Timestamp { get; set; }
     }
 }

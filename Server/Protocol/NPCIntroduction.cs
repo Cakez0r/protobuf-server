@@ -16,5 +16,14 @@ namespace Protocol
 
         [ProtoMember(4)]
         public float Scale { get; set; }
+
+        [ProtoMember(5)]
+        public int MaxHealth { get; set; }
+
+        [ProtoMember(6)]
+        public int MaxPower { get; set; }
+
+        [ProtoMember(7)]
+        public byte Level { get; set; }
     }
 }

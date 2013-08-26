@@ -24,7 +24,7 @@ namespace Server
             NPCIntroductions = new List<NPCIntroduction>()
         };
 
-        private HashSet<int> m_introducedPlayers = new HashSet<int>();
+        private Dictionary<int, PlayerIntroduction> m_introducedPlayers = new Dictionary<int, PlayerIntroduction>();
         public PlayerIntroduction Introduction { get; private set; }
 
         public PlayerStateUpdate_S2C LatestStateUpdate { get; private set; }
@@ -37,15 +37,17 @@ namespace Server
         public Vector2 Velocity { get; private set; }
         public byte Rotation { get; private set; }
 
-        public ushort Health { get; private set; }
-        public ushort MaxHealth { get; private set; }
+        public int Health { get; private set; }
+        public int MaxHealth { get; private set; }
 
-        public ushort Power { get; private set; }
-        public ushort MaxPower { get; private set; }
+        public int Power { get; private set; }
+        public int MaxPower { get; private set; }
 
         public byte Level { get; private set; }
 
-        public int? TargetID { get; private set; }
+        public bool IsDead { get { return false;  } }
+
+        public int TargetID { get; private set; }
 
         public int TimeOnClient { get; private set; }
 
@@ -58,7 +60,7 @@ namespace Server
 
         private void Handle_PlayerStateUpdate(PlayerStateUpdate_C2S psu)
         {
-            if (m_spellCastCancellationToken != null && (psu.X != m_compressedX|| psu.Y != m_compressedY))
+            if (m_lastAbility.State == AbilityState.Casting && (psu.X != m_compressedX || psu.Y != m_compressedY))
             {
                 StopCasting();
             }
@@ -107,10 +109,10 @@ namespace Server
                     if (distanceSqr <= RELEVANCE_DISTANCE_SQR)
                     {
                         m_worldState.PlayerStates.Add(stateUpdate);
-                        if (!m_introducedPlayers.Contains(stateUpdate.PlayerID))
+                        if (!m_introducedPlayers.ContainsKey(stateUpdate.PlayerID) || m_introducedPlayers[stateUpdate.PlayerID] != player.Introduction)
                         {
                             m_worldState.PlayerIntroductions.Add(player.Introduction);
-                            m_introducedPlayers.Add(stateUpdate.PlayerID);
+                            m_introducedPlayers[stateUpdate.PlayerID] = player.Introduction;
                         }
                     }
                 }
@@ -128,7 +130,10 @@ namespace Server
                         Model = npc.Model,
                         Name = npc.Name,
                         NPCID = npc.NPCID,
-                        Scale = npc.Scale
+                        Scale = npc.Scale,
+                        Level = Level,
+                        MaxHealth = 100,
+                        MaxPower = 100
                     };
                     m_worldState.NPCIntroductions.Add(introduction);
                     m_introducedNPCs.Add(nsu.NPCID);
@@ -138,7 +143,7 @@ namespace Server
             Send(m_worldState);
         }
 
-        private void ApplyHealthDelta(int delta, ITargetable source = null)
+        public void ApplyHealthDelta(int delta, ITargetable source)
         {
             int newHealth = Health + delta;
 
@@ -150,11 +155,30 @@ namespace Server
             }
         }
 
-        private void ApplyPowerDelta(int delta, ITargetable source = null)
+        public void ApplyPowerDelta(int delta, ITargetable source)
         {
             int power = Power + delta;
 
             Power = (ushort)MathHelper.Clamp(power, 0, MaxPower);
+        }
+
+        public void ApplyXPDelta(int delta, ITargetable source)
+        {
+            Fiber.Enqueue(() =>
+            {
+                Trace("Awarded {0}xp from {1}", delta, source.Name);
+
+                float newXP = GetStatValue(StatType.XP) + delta;
+                m_stats[StatType.XP].StatValue = newXP;
+
+                byte newLevel = Formulas.XPToLevel(newXP);
+                if (newLevel > Level)
+                {
+                    Level = newLevel;
+                    MaxPower = (ushort)Formulas.LevelToPower(Level);
+                    Info("Dinged level {0}", newLevel);
+                }
+            });
         }
 
         private void Die(ITargetable killer)

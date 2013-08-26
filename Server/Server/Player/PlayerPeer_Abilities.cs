@@ -19,7 +19,7 @@ namespace Server
         private IReadOnlyDictionary<StatType, PlayerStatModel> m_stats;
 
         private IAbilityRepository m_abilityRepository;
-        private CancellationTokenSource m_spellCastCancellationToken;
+        private AbilityInstance m_lastAbility = new AbilityInstance(null, null, null);
 
         private int m_lastAbilityAcceptTime = Environment.TickCount;
 
@@ -34,7 +34,7 @@ namespace Server
             {
                 result = UseAbilityResult.Failed;
             }
-            else if (m_spellCastCancellationToken != null)
+            else if (m_lastAbility.State == AbilityState.Casting)
             {
                 result = UseAbilityResult.AlreadyCasting;
             }
@@ -72,41 +72,21 @@ namespace Server
                 }
                 else
                 {
-                    try
+                    m_lastAbility = new AbilityInstance(this, target, abilityModel);
+
+                    if (m_lastAbility.State == AbilityState.Casting)
                     {
-                        if (abilityModel.CastTimeMS > 0)
-                        {
-                            m_spellCastCancellationToken = new CancellationTokenSource();
-
-                            Trace("Started casting");
-
-                            Send(new AbilityUseStarted() { Result = (int)result, FinishTime = Environment.TickCount + abilityModel.CastTimeMS, Timestamp = Environment.TickCount });
-
-                            await Task.Delay(abilityModel.CastTimeMS, m_spellCastCancellationToken.Token);
-                        }
-
-                        AbilityInstance abilityInstance = new AbilityInstance(this, target, abilityModel);
-
-                        result = AcceptAbilityAsSource(abilityInstance);
-
-                        if (result == UseAbilityResult.Completed)
-                        {
-                            result = await target.AcceptAbilityAsTarget(abilityInstance);
-                        }
-
-                        m_spellCastCancellationToken = null;
+                        Send(new AbilityCastNotification() { StartTime = m_lastAbility.StartTime, EndTime = m_lastAbility.EndTime });
                     }
-                    catch (TaskCanceledException)
-                    {
-                        result = UseAbilityResult.Cancelled;
-                    }
+
+                    result = await m_lastAbility.RunAbility();
                 }
             }
 
             string abilityName = abilityModel != null ? abilityModel.InternalName : string.Format("[INVALID ID {0}]", ability.AbilityID);
             Info("Used ability {0} on target {1} with result {2}", abilityName, targetName, result);
 
-            Respond(ability, new UseAbility_S2C() { Result = (int)result, Timestamp = Environment.TickCount });
+            Respond(ability, new UseAbility_S2C() { Result = (int)result });
         }
 
         private void Handle_StopCasting(StopCasting sc)
@@ -116,80 +96,14 @@ namespace Server
 
         private void StopCasting()
         {
-            if (m_spellCastCancellationToken != null)
+            if (m_lastAbility.State == AbilityState.Casting)
             {
                 Trace("Stopped casting");
-                m_spellCastCancellationToken.Cancel();
-                m_spellCastCancellationToken = null;
+                m_lastAbility.CancellationTokenSource.Cancel();
             }
         }
 
-        public UseAbilityResult AcceptAbilityAsSource(AbilityInstance ability)
-        {
-            CurrentZone.PlayerUsedAbility(ability);
 
-            UseAbilityResult result = UseAbilityResult.Failed;
-
-            if (Power + ability.Ability.SourcePowerDelta < 0)
-            {
-                result = UseAbilityResult.NotEnoughPower;
-            }
-            else
-            {
-                ApplyHealthDelta(ability.Ability.SourceHealthDelta, this);
-                ApplyPowerDelta(ability.Ability.SourcePowerDelta, this);
-                result = UseAbilityResult.Completed;
-            }
-
-            return result;
-        }
-
-        public Task<UseAbilityResult> AcceptAbilityAsTarget(AbilityInstance ability)
-        {
-            return Fiber.Enqueue(() =>
-            {
-                UseAbilityResult result = UseAbilityResult.Failed;
-                if (Vector2.DistanceSquared(ability.Source.Position, Position) > Math.Pow(ability.Ability.Range, 2))
-                {
-                    result = UseAbilityResult.OutOfRange;
-                }
-                else
-                {
-                    result = UseAbilityResult.Completed;
-
-                    int levelBonus = ability.Source.Level * 5;
-                    if (ability.Ability.AbilityType == AbilityModel.EAbilityType.HARM)
-                    {
-                        levelBonus *= -1;
-                    }
-
-                    ApplyHealthDelta(ability.Ability.TargetHealthDelta + levelBonus, ability.Source);
-
-                    ApplyPowerDelta(ability.Ability.TargetPowerDelta, ability.Source);
-                }
-
-                return result;
-            });
-        }
-
-        public void AwardXP(float xp)
-        {
-            Fiber.Enqueue(() =>
-            {
-                Trace("Awarded {0}xp", xp);
-
-                float newXP =  GetStatValue(StatType.XP) + xp;
-                m_stats[StatType.XP].StatValue = newXP;
-
-                byte newLevel = Formulas.XPToLevel(newXP);
-                if (newLevel > Level)
-                {
-                    Level = newLevel;
-                    MaxPower = (ushort)Formulas.LevelToPower(Level);
-                    Info("Dinged level {0}", newLevel);
-                }
-            });
-        }
 
         private float GetStatValue(StatType statType)
         {
