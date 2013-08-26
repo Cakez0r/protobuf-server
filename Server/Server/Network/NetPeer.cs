@@ -13,7 +13,7 @@ namespace Server
 {
     public abstract class NetPeer : IDisposable
     {
-        private const int BUFFER_SIZE = 8192;
+        private const int BUFFER_SIZE = 65535;
 
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
@@ -249,8 +249,8 @@ namespace Server
                 {
                     s_log.Trace("[{0}] Something went wrong in receive. Disconnecting.", ID);
                     Disconnect();
-                    eventArgs.Dispose();
                     ReturnBuffer(eventArgs.Buffer);
+                    eventArgs.Dispose();
                 }
             }
         }

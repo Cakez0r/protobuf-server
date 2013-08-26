@@ -6,6 +6,7 @@ using Server.Utility;
 using Server.Zones;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace Server
 {
@@ -31,7 +32,8 @@ namespace Server
         private HashSet<int> m_introducedNPCs = new HashSet<int>();
         private INPCRepository m_npcRepository;
 
-        public Vector2 Position { get; private set; }
+        public Vector2 m_position;
+        public Vector2 Position { get { return m_position; } }
         public Vector2 Velocity { get; private set; }
         public byte Rotation { get; private set; }
 
@@ -49,22 +51,28 @@ namespace Server
 
         public Zone CurrentZone { get; private set; }
 
-        private PlayerStateUpdate_C2S m_lastPlayerStateReceived = new PlayerStateUpdate_C2S();
+        private short m_compressedVelX;
+        private short m_compressedVelY;
+        private ushort m_compressedX;
+        private ushort m_compressedY;
 
         private void Handle_PlayerStateUpdate(PlayerStateUpdate_C2S psu)
         {
-            if (m_spellCastCancellationToken != null && (psu.X != Position.X || psu.Y != Position.Y))
+            if (m_spellCastCancellationToken != null && (psu.X != m_compressedX|| psu.Y != m_compressedY))
             {
                 StopCasting();
             }
 
             Rotation = psu.Rot;
-            Position = new Vector2(Compression.UShortToPosition(psu.X), Compression.UShortToPosition(psu.Y));
+            m_position = new Vector2(Compression.UShortToPosition(psu.X), Compression.UShortToPosition(psu.Y));
             Velocity = new Vector2(Compression.ShortToVelocity(psu.VelX), Compression.ShortToVelocity(psu.VelY));
             TimeOnClient = psu.Time;
             TargetID = psu.TargetID;
 
-            m_lastPlayerStateReceived = psu;
+            m_compressedVelX = psu.VelX;
+            m_compressedVelY = psu.VelY;
+            m_compressedX = psu.X;
+            m_compressedY = psu.Y;
         }
 
         private void BuildAndSendWorldStateUpdate()
@@ -87,12 +95,15 @@ namespace Server
             m_worldState.MaxPower = MaxPower;
             m_worldState.XP = GetStatValue(StatType.XP);
 
-            foreach (PlayerPeer player in CurrentZone.PlayersInZone)
+            ReadOnlyCollection<PlayerPeer> playersInZone = CurrentZone.PlayersInZone;
+            float distanceSqr = 0.0f;
+            for (int i = 0; i < playersInZone.Count; i++) 
             {
+                PlayerPeer player = playersInZone[i];
                 if (player.ID != ID && player.LatestStateUpdate != null)
                 {
                     PlayerStateUpdate_S2C stateUpdate = player.LatestStateUpdate;
-                    float distanceSqr = Vector2.DistanceSquared(Position, player.Position);
+                    Vector2.DistanceSquared(ref m_position, ref player.m_position, out distanceSqr);
                     if (distanceSqr <= RELEVANCE_DISTANCE_SQR)
                     {
                         m_worldState.PlayerStates.Add(stateUpdate);

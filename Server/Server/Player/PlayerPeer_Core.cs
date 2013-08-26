@@ -30,6 +30,7 @@ namespace Server
 
         private ObjectRouter m_unauthenticatedHandler = new ObjectRouter();
         private ObjectRouter m_authenticatedHandler = new ObjectRouter();
+        private bool m_routesInitialised = false;
 
         private int m_lastActivity = Environment.TickCount;
         private const int PING_TIMEOUT = 5000;
@@ -71,6 +72,8 @@ namespace Server
             m_authenticatedHandler.SetRoute<PlayerStateUpdate_C2S>(Handle_PlayerStateUpdate);
             m_authenticatedHandler.SetRoute<UseAbility_C2S>(Handle_UseAbility);
             m_authenticatedHandler.SetRoute<StopCasting>(Handle_StopCasting);
+
+            m_routesInitialised = true;
         }
 
         private void Update()
@@ -85,10 +88,10 @@ namespace Server
                     Rot = Rotation,
                     TargetID = TargetID,
                     Time = TimeOnClient,
-                    VelX = m_lastPlayerStateReceived.VelX,
-                    VelY = m_lastPlayerStateReceived.VelY,
-                    X = m_lastPlayerStateReceived.X,
-                    Y = m_lastPlayerStateReceived.Y
+                    VelX = m_compressedVelX,
+                    VelY = m_compressedVelY,
+                    X = m_compressedX,
+                    Y = m_compressedY
                 };
 
                 ApplyPowerDelta(1);
@@ -114,17 +117,25 @@ namespace Server
 
         protected override void DispatchPacket(Packet packet)
         {
-            bool handled = IsAuthenticated ?
-                m_authenticatedHandler.Route(packet) :
-                m_unauthenticatedHandler.Route(packet);
-
-            if (!handled)
+            if (m_routesInitialised)
             {
-                Warn("Failed to handle packet of type {0}", packet.GetType());
-                Disconnect();
-            }
+                bool handled = IsAuthenticated ?
+                    m_authenticatedHandler.Route(packet) :
+                    m_unauthenticatedHandler.Route(packet);
 
-            m_lastActivity = Environment.TickCount;
+                if (!handled)
+                {
+                    Warn("Failed to handle packet of type {0}", packet.GetType());
+                    Disconnect();
+                }
+
+                m_lastActivity = Environment.TickCount;
+            }
+            else
+            {
+                Warn("Received packet before routes are initialised. Rescheduling it...");
+                Fiber.Schedule(() => DispatchPacket(packet), TimeSpan.FromMilliseconds(50));
+            }
         }
 
         public override void Dispose()
@@ -158,7 +169,7 @@ namespace Server
 
             if ((saveFlags & SaveFlags.General) == SaveFlags.General)
             {
-                Trace("Saving (General)");
+                //Trace("Saving (General)");
                 float health = (float)Health / MaxHealth;
                 float power = (float)Power / MaxPower;
                 m_playerRepository.UpdatePlayer(m_player.PlayerID, m_player.AccountID, m_player.Name, health, power, 0, CurrentZone.ID, Position.X, Position.Y, Rotation);
@@ -167,7 +178,7 @@ namespace Server
 
             if ((saveFlags & SaveFlags.Stats) == SaveFlags.Stats)
             {
-                Trace("Saving (Stats)");
+                //Trace("Saving (Stats)");
                 foreach (PlayerStatModel stat in m_stats.Values)
                 {
                     m_playerRepository.UpdatePlayerStat(stat.PlayerStatID, stat.PlayerID, stat.StatID, stat.StatValue);

@@ -13,7 +13,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Server
@@ -141,14 +140,18 @@ namespace Server
 
             m_statsRepository.ZoneUpdateTimes = m_zones.Values.ToDictionary(z => "Zone " + z.ID, z => z.LastUpdateLength);
 
+            Console.Title = string.Format("Players Online: {0}", m_players.Count);
+
             m_fiber.Schedule(StatsUpdate, TimeSpan.FromMilliseconds(STATS_UPDATE_INTERVAL_MS), false);
         }
 
         private Dictionary<int, Zone> BuildZones(INPCRepository npcRepository)
         {
             Dictionary<int, Zone> zones = new Dictionary<int, Zone>();
-            zones.Add(0, new Zone(0, m_npcRepository, m_npcFactory));
-            zones.Add(1, new Zone(1, m_npcRepository, m_npcFactory));
+            for (int i = 0; i < 10; i++)
+            {
+                zones.Add(i, new Zone(i, m_npcRepository, m_npcFactory));
+            }
             return zones;
         }
     }

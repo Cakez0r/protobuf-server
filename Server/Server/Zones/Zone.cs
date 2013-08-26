@@ -1,5 +1,4 @@
-﻿using Data.Abilities;
-using Data.NPCs;
+﻿using Data.NPCs;
 using NLog;
 using Protocol;
 using Server.Abilities;
@@ -8,6 +7,7 @@ using Server.Utility;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -29,7 +29,7 @@ namespace Server.Zones
         private INPCRepository m_npcRepository;
         private NPCFactory m_npcFactory;
 
-        public IEnumerable<PlayerPeer> PlayersInZone { get; private set; }
+        public ReadOnlyCollection<PlayerPeer> PlayersInZone { get; private set; }
 
         private List<NPCSpawnModel> m_npcSpawns;
 
@@ -58,7 +58,7 @@ namespace Server.Zones
                 m_npcs.Add(npcInstance.ID, npcInstance);
             }
 
-            PlayersInZone = Enumerable.Empty<PlayerPeer>();
+            PlayersInZone = Enumerable.Empty<PlayerPeer>().ToList().AsReadOnly();
 
             m_fiber.Enqueue(Update);
         }
@@ -73,7 +73,7 @@ namespace Server.Zones
         {
             if (m_playersInZone.TryAdd(player.ID, player))
             {
-                PlayersInZone = m_playersInZone.Values;
+                PlayersInZone = (ReadOnlyCollection<PlayerPeer>)m_playersInZone.Values;
             }
         }
 
@@ -82,7 +82,7 @@ namespace Server.Zones
             PlayerPeer removedPlayer = default(PlayerPeer);
             if (m_playersInZone.TryRemove(player.ID, out removedPlayer))
             {
-                PlayersInZone = m_playersInZone.Values;
+                PlayersInZone = (ReadOnlyCollection<PlayerPeer>)m_playersInZone.Values;
             }
         }
 

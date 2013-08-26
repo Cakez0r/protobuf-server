@@ -2,11 +2,7 @@
 using Server;
 using Server.Utility;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ServerBenchmark
 {
@@ -19,8 +15,8 @@ namespace ServerBenchmark
 
         private Vector2 m_target;
 
-        private Vector2 m_min = new Vector2(2400, 2400);
-        private Vector2 m_max = new Vector2(2600, 2600);
+        private Vector2 m_min = new Vector2(2000, 2000);
+        private Vector2 m_max = new Vector2(3000, 3000);
 
         private Vector2 m_position;
 
@@ -79,7 +75,11 @@ namespace ServerBenchmark
             m_psu.Time = Environment.TickCount;
 
             Send(m_psu);
-            Fiber.Schedule(Update, TimeSpan.FromMilliseconds(50), true);
+
+            if (IsConnected)
+            {
+                Fiber.Schedule(Update, TimeSpan.FromMilliseconds(50), true);
+            }
         }
 
         private Vector2 GetRandomTarget()
