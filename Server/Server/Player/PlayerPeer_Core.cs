@@ -9,11 +9,13 @@ using Server.Utility;
 using Server.Zones;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Sockets;
 
 namespace Server
 {
-    public partial class PlayerPeer : NetPeer, ITargetable
+    [DebuggerDisplay("ID: {ID}")]
+    public partial class PlayerPeer : NetPeer, IEntity
     {
         private const int TARGET_UPDATE_TIME_MS = 50;
         private const int SAVE_INTERVAL_MS = 60000;
@@ -45,7 +47,8 @@ namespace Server
 
         public string Name
         {
-            get { return m_player != null ? m_player.Name : string.Format("[Peer{0}]", ID); }
+            get;// { return m_player != null ? m_player.Name : string.Format("[Peer{0}]", ID); }
+            set;
         }
 
         public PlayerPeer(Socket socket, IAccountRepository accountRepository, INPCRepository npcRepository, IPlayerRepository playerRepository, IAbilityRepository abilityRepository, Dictionary<int, Zone> zones)
@@ -80,21 +83,21 @@ namespace Server
         {
             if (IsAuthenticated)
             {
-                LatestStateUpdate = new PlayerStateUpdate_S2C()
+                m_latestStateUpdate = new PlayerStateUpdate_S2C()
                 {
-                    PlayerID = ID,
+                    ID = ID,
                     Health = (ushort)Health,
                     Power = (ushort)Power,
-                    Rot = Rotation,
+                    Rotation = Rotation,
                     TargetID = TargetID,
-                    Time = TimeOnClient,
+                    Timestamp = TimeOnClient,
                     VelX = m_compressedVelX,
                     VelY = m_compressedVelY,
                     X = m_compressedX,
                     Y = m_compressedY
                 };
 
-                if (CurrentZone != null && LatestStateUpdate != null)
+                if (CurrentZone != null)
                 {
                     BuildAndSendWorldStateUpdate();
                 }

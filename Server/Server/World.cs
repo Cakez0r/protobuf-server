@@ -148,7 +148,7 @@ namespace Server
         private Dictionary<int, Zone> BuildZones(INPCRepository npcRepository)
         {
             Dictionary<int, Zone> zones = new Dictionary<int, Zone>();
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 1; i++)
             {
                 zones.Add(i, new Zone(i, m_npcRepository, m_npcFactory));
             }

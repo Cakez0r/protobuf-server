@@ -5,13 +5,14 @@ using Protocol;
 using Server.Abilities;
 using Server.Gameplay;
 using Server.Utility;
+using Server.Zones;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Server.NPC
 {
-    public class NPCInstance : ITargetable
+    public class NPCInstance : IEntity
     {
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
@@ -19,7 +20,6 @@ namespace Server.NPC
 
         public NPCModel NPCModel { get; private set; }
         public NPCSpawnModel NPCSpawnModel { get; private set; }
-        public NPCStateUpdate StateUpdate { get; private set; }
         public NPCIntroduction Introduction { get; private set; }
 
         private List<INPCBehaviour> m_behaviours;
@@ -27,6 +27,8 @@ namespace Server.NPC
         private IReadOnlyDictionary<StatType, float> m_stats;
 
         private Fiber m_fiber;
+
+        private NPCStateUpdate m_stateUpdate;
 
         public Vector2 Position { get; set; }
 
@@ -73,10 +75,10 @@ namespace Server.NPC
             Health = Formulas.StaminaToHealth(GetStatValue(StatType.Stamina));
             MaxHealth = Health;
 
-            StateUpdate = new NPCStateUpdate()
+            m_stateUpdate = new NPCStateUpdate()
             {
-                Rot = Compression.RotationToByte(npcSpawn.Rotation),
-                NPCID = npc.NPCID,
+                Rotation = Compression.RotationToByte(npcSpawn.Rotation),
+                ID = npc.NPCID,
                 NPCInstanceID = ID,
                 Health = Health,
                 Power = 100,
@@ -97,16 +99,16 @@ namespace Server.NPC
                 behaviour.Update(dt, this);
             }
 
-            StateUpdate.X = Compression.PositionToUShort(Position.X);
-            StateUpdate.Y = Compression.PositionToUShort(Position.Y);
-            StateUpdate.Rot = Compression.RotationToByte(Rotation);
-            StateUpdate.VelX = Compression.VelocityToShort(Velocity.X);
-            StateUpdate.VelY = Compression.VelocityToShort(Velocity.Y);
-            StateUpdate.Health = (ushort)Health;
-            StateUpdate.Time = Environment.TickCount;
+            m_stateUpdate.X = Compression.PositionToUShort(Position.X);
+            m_stateUpdate.Y = Compression.PositionToUShort(Position.Y);
+            m_stateUpdate.Rotation = Compression.RotationToByte(Rotation);
+            m_stateUpdate.VelX = Compression.VelocityToShort(Velocity.X);
+            m_stateUpdate.VelY = Compression.VelocityToShort(Velocity.Y);
+            m_stateUpdate.Health = (ushort)Health;
+            m_stateUpdate.Timestamp = Environment.TickCount;
         }
 
-        public void ApplyHealthDelta(int delta, ITargetable source)
+        public void ApplyHealthDelta(int delta, IEntity source)
         {
             int newHealth = Health + delta;
 
@@ -118,18 +120,18 @@ namespace Server.NPC
             }
         }
 
-        public void ApplyPowerDelta(int delta, ITargetable source)
+        public void ApplyPowerDelta(int delta, IEntity source)
         {
             int newPower = Power + delta;
 
             Power = MathHelper.Clamp(newPower, 0, MaxPower);
         }
 
-        public void ApplyXPDelta(int delta, ITargetable source)
+        public void ApplyXPDelta(int delta, IEntity source)
         {
         }
 
-        private void Die(ITargetable killer)
+        private void Die(IEntity killer)
         {
             IsDead = true;
             m_fiber.Schedule(Respawn, NPCSpawnModel.Frequency);
@@ -190,6 +192,11 @@ namespace Server.NPC
             m_stats.TryGetValue(statType, out stat);
 
             return stat;
+        }
+
+        public EntityStateUpdate GetStateUpdate()
+        {
+            return m_stateUpdate;
         }
 
         #region Logging

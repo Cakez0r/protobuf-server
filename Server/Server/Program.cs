@@ -7,16 +7,88 @@ using Microsoft.Practices.Unity;
 using Microsoft.Practices.Unity.Configuration;
 using NLog;
 using Protocol;
+using Server.Utility;
+using Server.Zones;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-
+using System.Threading;
 
 namespace Server
 {
     class Program
     {
         private static Logger s_log = LogManager.GetCurrentClassLogger();
+
+        class FakeEntity : IEntity
+        {
+            public int ID
+            {
+                get { throw new System.NotImplementedException(); }
+            }
+
+            public string Name
+            {
+                get { throw new System.NotImplementedException(); }
+            }
+
+            public Utility.Vector2 Position { get; set; }
+
+            public byte Level
+            {
+                get { throw new System.NotImplementedException(); }
+            }
+
+            public int Health
+            {
+                get { throw new System.NotImplementedException(); }
+            }
+
+            public int Power
+            {
+                get { throw new System.NotImplementedException(); }
+            }
+
+            public int MaxHealth
+            {
+                get { throw new System.NotImplementedException(); }
+            }
+
+            public int MaxPower
+            {
+                get { throw new System.NotImplementedException(); }
+            }
+
+            public bool IsDead
+            {
+                get { throw new System.NotImplementedException(); }
+            }
+
+            public void ApplyHealthDelta(int delta, IEntity source)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            public void ApplyPowerDelta(int delta, IEntity source)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            public void ApplyXPDelta(int delta, IEntity source)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            public EntityStateUpdate GetStateUpdate()
+            {
+                throw new System.NotImplementedException();
+            }
+        }
 
         private static void Main(string[] args)
         {

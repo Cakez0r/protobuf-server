@@ -25,11 +25,13 @@ namespace Server.Zones
         private Fiber m_fiber = new Fiber();
 
         private ConcurrentDictionary<int, PlayerPeer> m_playersInZone = new ConcurrentDictionary<int, PlayerPeer>();
+        private volatile IEntity[] m_playersArray = new IEntity[0];
+        private volatile Link[] m_links = new Link[0];
+        private volatile BoundingBox[] m_boundaries = new BoundingBox[0];
+        private volatile ReaderWriterLockSlim m_buildLock = new ReaderWriterLockSlim();
 
         private INPCRepository m_npcRepository;
         private NPCFactory m_npcFactory;
-
-        public ReadOnlyCollection<PlayerPeer> PlayersInZone { get; private set; }
 
         private List<NPCSpawnModel> m_npcSpawns;
 
@@ -57,7 +59,9 @@ namespace Server.Zones
                 m_npcs.Add(npcInstance.ID, npcInstance);
             }
 
-            PlayersInZone = Enumerable.Empty<PlayerPeer>().ToList().AsReadOnly();
+            m_playersArray = Enumerable.Empty<IEntity>().ToArray();
+            m_boundaries = Enumerable.Range(0, 5000).Select(i => new BoundingBox()).ToArray();
+            m_links = Enumerable.Range(0, 5000).Select(i => new Link()).ToArray();
 
             m_fiber.Enqueue(Update);
         }
@@ -72,7 +76,10 @@ namespace Server.Zones
         {
             if (m_playersInZone.TryAdd(player.ID, player))
             {
-                PlayersInZone = (ReadOnlyCollection<PlayerPeer>)m_playersInZone.Values;
+                m_buildLock.EnterWriteLock();
+                m_playersArray = m_playersInZone.Values.ToArray();
+                root = KDTree.KDSort(m_playersArray, m_links, m_boundaries, 0, m_playersArray.Length - 1, false);
+                m_buildLock.ExitWriteLock();
             }
         }
 
@@ -81,10 +88,20 @@ namespace Server.Zones
             PlayerPeer removedPlayer = default(PlayerPeer);
             if (m_playersInZone.TryRemove(player.ID, out removedPlayer))
             {
-                PlayersInZone = (ReadOnlyCollection<PlayerPeer>)m_playersInZone.Values;
+                m_buildLock.EnterWriteLock();
+                m_playersArray = m_playersInZone.Values.ToArray();
+                m_buildLock.ExitWriteLock();
             }
         }
 
+        public void GatherEntities(BoundingBox range, List<IEntity> result)
+        {
+            m_buildLock.EnterReadLock();
+            KDTree.Query(m_playersArray, m_links, m_boundaries, ref range, root, result);
+            m_buildLock.ExitReadLock();
+        }
+
+        int root = 0;
         private void Update()
         {
             m_zoneUpdateTimer.Restart();
@@ -93,6 +110,30 @@ namespace Server.Zones
             foreach (var kvp in m_npcs)
             {
                 kvp.Value.Update(dt);
+            }
+
+            if (m_playersArray.Length > 0)
+            {
+                //Stopwatch sw = Stopwatch.StartNew();
+                KDTree.LeftCount = 0;
+                KDTree.RightCount = 0;
+                if (m_buildLock.TryEnterWriteLock(30))
+                {
+                    root = KDTree.KDSort(m_playersArray, m_links, m_boundaries, 0, m_playersArray.Length - 1, false);
+                    KDTree.RightCount++;
+                    KDTree.LeftCount++;
+                    s_log.Trace("Balance: {0}", KDTree.LeftCount > KDTree.RightCount ? (float)KDTree.LeftCount / KDTree.RightCount : (float)KDTree.RightCount / KDTree.LeftCount);
+                    m_buildLock.ExitWriteLock();
+                }
+                else
+                {
+                    s_log.Warn("Rebuild skipped!");
+                }
+                //sw.Stop();
+                //if (sw.ElapsedMilliseconds > 10)
+                //{
+                //    s_log.Warn("Rebuild time was {0}ms", sw.ElapsedMilliseconds);
+                //}
             }
 
             m_lastUpdateTime = DateTime.Now;
@@ -112,11 +153,9 @@ namespace Server.Zones
             }
         }
 
-        public List<NPCStateUpdate> GatherNPCStatesForPlayer(PlayerPeer player)
+        public void GatherNPCStatesForPlayer(PlayerPeer player, EntityStateUpdate[] entities, ref int bufferCount)
         {
             Vector2 playerPosition = player.Position;
-            List<NPCStateUpdate> result = new List<NPCStateUpdate>();
-
             foreach (var kvp in m_npcs)
             {
                 NPCInstance npc = kvp.Value;
@@ -127,11 +166,9 @@ namespace Server.Zones
 
                 if (Vector2.DistanceSquared(playerPosition, npc.Position) <= RELEVANCE_DISTANCE_SQR)
                 {
-                    result.Add(npc.StateUpdate);
+                    entities[bufferCount++] = npc.GetStateUpdate();
                 }
             }
-
-            return result;
         }
 
         public void AbilityUsed(AbilityInstance ability)
@@ -139,21 +176,21 @@ namespace Server.Zones
 
         }
 
-        public Task<ITargetable> GetTarget(int id)
+        public Task<IEntity> GetTarget(int id)
         {
             return m_fiber.Enqueue(() =>
             {
                 PlayerPeer player = default(PlayerPeer);
                 NPCInstance npc = default(NPCInstance);
-                ITargetable target = default(ITargetable);
+                IEntity target = default(IEntity);
 
                 if (m_playersInZone.TryGetValue(id, out player))
                 {
-                    target = (ITargetable)player;
+                    target = (IEntity)player;
                 }
                 else if (m_npcs.TryGetValue(id, out npc))
                 {
-                    target = (ITargetable)npc;
+                    target = (IEntity)npc;
                 }
 
                 return target;
@@ -162,11 +199,11 @@ namespace Server.Zones
 
         public void SendMessageToZone(string sender, string message)
         {
-            ChatMessage cm = new ChatMessage() { SenderName = sender, Message = message };
-            foreach (PlayerPeer player in PlayersInZone)
-            {
-                player.Send(cm);
-            }
+            //ChatMessage cm = new ChatMessage() { SenderName = sender, Message = message };
+            //foreach (PlayerPeer player in PlayersInZone)
+            //{
+            //    player.Send(cm);
+            //}
         }
     }
 }

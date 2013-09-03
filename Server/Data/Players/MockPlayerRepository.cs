@@ -12,12 +12,12 @@ namespace Data.Players
 
         public PlayerModel GetPlayerByID(int playerID)
         {
-            return GetPlayerModel("Player" + playerID);
+            return GetPlayerModel(playerID.ToString());
         }
 
         public IEnumerable<PlayerModel> GetPlayersByAccountID(int accountID)
         {
-            return Enumerable.Range(0, 1).Select(i => GetPlayerModel("Player" + accountID));
+            return Enumerable.Range(0, 1).Select(i => GetPlayerModel(accountID.ToString()));
         }
 
         public IEnumerable<PlayerStatModel> GetPlayerStatsByPlayerID(int playerID)

@@ -13,7 +13,7 @@ namespace ServerBenchmark
 
             while (true)
             {
-                for (int i = 0; i < 500; i++)
+                for (int i = 0; i < 200; i++)
                 {
                     Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                     s.Connect("127.0.0.1", 25012);

@@ -1,5 +1,6 @@
 ﻿using NLog;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Server.Utility
@@ -12,6 +13,8 @@ namespace Server.Utility
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
         private ConcurrentExclusiveSchedulerPair m_schedulers = new ConcurrentExclusiveSchedulerPair();
+
+        private CancellationTokenSource m_cancellationTokenSource = new CancellationTokenSource();
 
         /// <summary>
         /// Enqueue a function
@@ -49,7 +52,7 @@ namespace Server.Utility
         /// <param name="exclusive">Should the function run exclusively?</param>
         public Task Schedule(Action f, TimeSpan waitTime, bool exclusive = true)
         {
-            return Task.Delay(waitTime).ContinueWith((t) => Enqueue(f, exclusive)).Unwrap();
+            return Task.Delay(waitTime, m_cancellationTokenSource.Token).ContinueWith((t) => Enqueue(f, exclusive), TaskContinuationOptions.OnlyOnRanToCompletion).Unwrap();
         }
 
         /// <summary>
@@ -60,7 +63,7 @@ namespace Server.Utility
         /// <param name="exclusive">Should the function run exclusively?</param>
         public Task<T> Schedule<T>(Func<T> f, TimeSpan waitTime, bool exclusive = true)
         {
-            return Task.Delay(waitTime).ContinueWith((t) => Enqueue<T>(f, exclusive)).Unwrap();
+            return Task.Delay(waitTime, m_cancellationTokenSource.Token).ContinueWith((t) => Enqueue<T>(f, exclusive), TaskContinuationOptions.OnlyOnRanToCompletion).Unwrap();
         }
 
         public void Stop()

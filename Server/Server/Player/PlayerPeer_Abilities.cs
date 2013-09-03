@@ -5,6 +5,7 @@ using Server.Abilities;
 using Server.Gameplay;
 using Server.NPC;
 using Server.Utility;
+using Server.Zones;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -48,7 +49,7 @@ namespace Server
             }
             else
             {
-                ITargetable target = default(ITargetable);
+                IEntity target = default(IEntity);
                 if (ability.TargetID != 0)
                 {
                     target = await CurrentZone.GetTarget(ability.TargetID);

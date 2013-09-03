@@ -1,4 +1,5 @@
 ﻿using ProtoBuf;
+using System;
 using System.Collections.Generic;
 
 namespace Protocol
@@ -9,31 +10,29 @@ namespace Protocol
         [ProtoMember(1)]
         public int CurrentServerTime { get; set; }
 
+
         [ProtoMember(2)]
-        public List<PlayerStateUpdate_S2C> PlayerStates { get; set; }
-        
+        public IEnumerable<EntityStateUpdate> EntityStates { get; set; }
+
         [ProtoMember(3)]
         public List<PlayerIntroduction> PlayerIntroductions { get; set; }
 
         [ProtoMember(4)]
-        public List<NPCStateUpdate> NPCStates { get; set; }
-
-        [ProtoMember(5)]
         public List<NPCIntroduction> NPCIntroductions { get; set; }
 
-        [ProtoMember(6)]
+        [ProtoMember(5)]
         public int Health { get; set; }
 
-        [ProtoMember(7)]
+        [ProtoMember(6)]
         public int MaxHealth { get; set; }
 
-        [ProtoMember(8)]
+        [ProtoMember(7)]
         public int Power { get; set; }
 
-        [ProtoMember(9)]
+        [ProtoMember(8)]
         public int MaxPower { get; set; }
 
-        [ProtoMember(10)]
+        [ProtoMember(9)]
         public float XP { get; set; }
     }
 }

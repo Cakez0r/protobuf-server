@@ -1,6 +1,7 @@
 ﻿using Data.Abilities;
 using NLog;
 using Server.Utility;
+using Server.Zones;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,9 +12,9 @@ namespace Server.Abilities
     {
         public AbilityModel Ability { get; private set; }
 
-        public ITargetable Source { get; private set; }
+        public IEntity Source { get; private set; }
 
-        public ITargetable Target { get; private set; }
+        public IEntity Target { get; private set; }
 
         public int StartTime { get; private set; }
 
@@ -27,7 +28,7 @@ namespace Server.Abilities
             get { return m_cancellationTokenSource;  }
         }
 
-        public AbilityInstance(ITargetable source, ITargetable target, AbilityModel ability)
+        public AbilityInstance(IEntity source, IEntity target, AbilityModel ability)
         {
             Source = source;
             Target = target;

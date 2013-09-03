@@ -81,6 +81,7 @@ namespace Server
                 MaxPower = (ushort)Formulas.LevelToPower(Level);
                 Health = (ushort)(MaxHealth * m_player.Health);
                 Power = (ushort)(MaxPower * m_player.Power);
+                Name = account.Username;
 
                 Introduction = new PlayerIntroduction() { PlayerID = ID, Name = player.Name };
 

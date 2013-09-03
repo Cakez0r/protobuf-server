@@ -13,7 +13,7 @@ namespace Server
 {
     public abstract class NetPeer : IDisposable
     {
-        private const int BUFFER_SIZE = 65535;
+        private const int BUFFER_SIZE = 16384 * 2;
 
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
