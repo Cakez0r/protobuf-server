@@ -4,46 +4,69 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Server.Utility
 {
-    public class Link
+    public class KDTree<T> where T : IPositionable
     {
-        public int Left;
-        public int Right;
-        /*
-        public long a;
-        public long b;
-        public long c;
-        public long d;
-        public long e;
-        public long f;
-        public long g;
-        public long h;
-        public long i;
-        public long j;
-        public long k;
-        public long l;
-        public long m;
-        public long n;
-        public long o;
-        */
-        public Link()
+        private class Node
         {
-            Left = -1;
-            Right = -1;
+            public int Left { get; set; }
+            public int Right { get; set; }
+            public BoundingBox Bounds { get; set; }
+
+            public Node()
+            {
+                Left = -1;
+                Right = -1;
+            }
         }
-    }
 
-    public class KDTree
-    {
-        public static int LeftCount;
-        public static int RightCount;
+        private T[] m_entities = new T[0];
+        private List<Node> m_nodes = new List<Node>();
+        private ReaderWriterLockSlim m_lock = new ReaderWriterLockSlim();
+        private int m_root;
 
-        public static int KDSort(IEntity[] values, Link[] links, BoundingBox[] boundaries, int left, int right, bool sortByX)
+        public void Build(T[] entities)
         {
-            int pivot = Partition(values, boundaries, (left + right) / 2, left, right, sortByX);
+            if (entities.Length > 0)
+            {
+                m_lock.EnterWriteLock();
+                m_entities = entities.ToArray();
+                int count = m_entities.Length;
+                if (m_nodes.Capacity < count)
+                {
+                    m_nodes.Capacity = count;
+                }
+                while (m_nodes.Count < count)
+                {
+                    m_nodes.Add(new Node());
+                }
+
+                m_root = KDSort(m_entities, m_nodes, 0, count - 1, false);
+                m_lock.ExitWriteLock();
+            }
+        }
+
+        public List<T> GatherRange(BoundingBox range)
+        {
+            List<T> result = new List<T>();
+
+            if (m_entities.Length > 0)
+            {
+                m_lock.EnterReadLock();
+                Query(m_entities, m_nodes, ref range, m_root, result);
+                m_lock.ExitReadLock();
+            }
+
+            return result;
+        }
+
+        private static int KDSort(T[] values, List<Node> nodes, int left, int right, bool sortByX)
+        {
+            int pivot = Partition(values, (left + right) / 2, left, right, sortByX);
 
             BoundingBox bounds;
             bounds.Min = new Vector2(float.MaxValue);
@@ -58,72 +81,26 @@ namespace Server.Utility
                 if (position.Y < bounds.Min.Y) bounds.Min.Y = position.Y;
             }
 
-            boundaries[pivot] = bounds;
+            nodes[pivot].Bounds = bounds;
 
-            Link link = links[pivot];
+            Node link = nodes[pivot];
 
             link.Left = -1;
             link.Right = -1;
             if (left < pivot)
             {
-                link.Left = KDSort(values, links, boundaries, left, pivot - 1, !sortByX);
+                link.Left = KDSort(values, nodes, left, pivot - 1, !sortByX);
             }
 
             if (right > pivot)
             {
-                link.Right = KDSort(values, links, boundaries, pivot + 1, right, !sortByX);
+                link.Right = KDSort(values, nodes, pivot + 1, right, !sortByX);
             }
 
             return pivot;
         }
 
-        public static void Query(IEntity[] values, Link[] links, BoundingBox[] boundaries, ref BoundingBox range, int root, List<IEntity> result)
-        {
-            ContainmentType ct = range.Contains(boundaries[root]);
-
-            if (ct == ContainmentType.Contains)
-            {
-                GatherAll(values, links, root, result);
-            }
-            else if (ct == ContainmentType.Intersects)
-            {
-                if (range.Contains(values[root].Position) != ContainmentType.Disjoint)
-                {
-                    result.Add(values[root]);
-                }
-
-                Link link = links[root];
-                if (link.Left >= 0)
-                {
-                    LeftCount++;
-                    Query(values, links, boundaries, ref range, link.Left, result);
-                }
-
-                if (link.Right >= 0)
-                {
-                    RightCount++;
-                    Query(values, links, boundaries, ref range, link.Right, result);
-                }
-            }
-        }
-
-        private static void GatherAll(IEntity[] values, Link[] links, int root, List<IEntity> result)
-        {
-            result.Add(values[root]);
-
-            Link link = links[root];
-            if (link.Left >= 0)
-            {
-                GatherAll(values, links, link.Left, result);
-            }
-
-            if (link.Right >= 0)
-            {
-                GatherAll(values, links, link.Right, result);
-            }
-        }
-
-        private static int Partition(IEntity[] values, BoundingBox[] boundaries, int pivot, int left, int right, bool sortByX)
+        private static int Partition(T[] values, int pivot, int left, int right, bool sortByX)
         {
             Vector2 pivotPosition = values[pivot].Position;
 
@@ -148,10 +125,54 @@ namespace Server.Utility
             return next;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void Swap(IEntity[] values, int a, int b)
+        private static void Query(T[] values, List<Node> nodes, ref BoundingBox range, int root, IList<T> result)
         {
-            IEntity tmp = values[a];
+            ContainmentType ct = range.Contains(nodes[root].Bounds);
+
+            if (ct == ContainmentType.Contains)
+            {
+                GatherAll(values, nodes, root, result);
+            }
+            else if (ct == ContainmentType.Intersects)
+            {
+                Node link = nodes[root];
+                if (link.Left >= 0)
+                {
+                    Query(values, nodes, ref range, link.Left, result);
+                }
+
+                if (link.Right >= 0)
+                {
+                    Query(values, nodes, ref range, link.Right, result);
+                }
+
+                if (range.Contains(values[root].Position) != ContainmentType.Disjoint)
+                {
+                    result.Add(values[root]);
+                }
+            }
+        }
+
+        private static void GatherAll(T[] values, List<Node> nodes, int root, IList<T> result)
+        {
+            result.Add(values[root]);
+
+            Node link = nodes[root];
+            if (link.Left >= 0)
+            {
+                GatherAll(values, nodes, link.Left, result);
+            }
+
+            if (link.Right >= 0)
+            {
+                GatherAll(values, nodes, link.Right, result);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void Swap(T[] values, int a, int b)
+        {
+            T tmp = values[a];
             values[a] = values[b];
             values[b] = tmp;
         }

@@ -25,10 +25,9 @@ namespace Server.Zones
         private Fiber m_fiber = new Fiber();
 
         private ConcurrentDictionary<int, PlayerPeer> m_playersInZone = new ConcurrentDictionary<int, PlayerPeer>();
-        private volatile IEntity[] m_playersArray = new IEntity[0];
-        private volatile Link[] m_links = new Link[0];
-        private volatile BoundingBox[] m_boundaries = new BoundingBox[0];
-        private volatile ReaderWriterLockSlim m_buildLock = new ReaderWriterLockSlim();
+        private KDTree<PlayerPeer> m_playerTree = new KDTree<PlayerPeer>();
+        private PlayerPeer[] m_playerArray;
+        private bool m_playerListIsDirty;
 
         private INPCRepository m_npcRepository;
         private NPCFactory m_npcFactory;
@@ -36,6 +35,8 @@ namespace Server.Zones
         private List<NPCSpawnModel> m_npcSpawns;
 
         private Dictionary<int, NPCInstance> m_npcs = new Dictionary<int, NPCInstance>();
+        private KDTree<NPCInstance> m_npcTree = new KDTree<NPCInstance>();
+        private NPCInstance[] m_npcArray;
 
         private DateTime m_lastUpdateTime = DateTime.Now;
 
@@ -52,16 +53,15 @@ namespace Server.Zones
             m_npcFactory = npcFactory;
 
             m_npcSpawns = LoadZoneNPCSpawns();
-
-            foreach (NPCSpawnModel spawn in m_npcSpawns)
+            m_npcArray = new NPCInstance[m_npcSpawns.Count];
+            for (int i = 0; i < m_npcSpawns.Count; i++)
             {
-                NPCInstance npcInstance = npcFactory.SpawnNPC(m_fiber, spawn);
+                NPCInstance npcInstance = npcFactory.SpawnNPC(m_fiber, m_npcSpawns[i]);
                 m_npcs.Add(npcInstance.ID, npcInstance);
+                m_npcArray[i] = npcInstance;
             }
 
-            m_playersArray = Enumerable.Empty<IEntity>().ToArray();
-            m_boundaries = Enumerable.Range(0, 5000).Select(i => new BoundingBox()).ToArray();
-            m_links = Enumerable.Range(0, 5000).Select(i => new Link()).ToArray();
+            m_playerArray = Enumerable.Empty<PlayerPeer>().ToArray();
 
             m_fiber.Enqueue(Update);
         }
@@ -76,10 +76,10 @@ namespace Server.Zones
         {
             if (m_playersInZone.TryAdd(player.ID, player))
             {
-                m_buildLock.EnterWriteLock();
-                m_playersArray = m_playersInZone.Values.ToArray();
-                root = KDTree.KDSort(m_playersArray, m_links, m_boundaries, 0, m_playersArray.Length - 1, false);
-                m_buildLock.ExitWriteLock();
+                lock (m_playerArray)
+                {
+                    m_playerListIsDirty = true;
+                }
             }
         }
 
@@ -88,20 +88,23 @@ namespace Server.Zones
             PlayerPeer removedPlayer = default(PlayerPeer);
             if (m_playersInZone.TryRemove(player.ID, out removedPlayer))
             {
-                m_buildLock.EnterWriteLock();
-                m_playersArray = m_playersInZone.Values.ToArray();
-                m_buildLock.ExitWriteLock();
+                lock (m_playerArray)
+                {
+                    m_playerListIsDirty = true;
+                }
             }
         }
 
-        public void GatherEntities(BoundingBox range, List<IEntity> result)
+        public List<PlayerPeer> GatherPlayersInRange(BoundingBox range)
         {
-            m_buildLock.EnterReadLock();
-            KDTree.Query(m_playersArray, m_links, m_boundaries, ref range, root, result);
-            m_buildLock.ExitReadLock();
+            return m_playerTree.GatherRange(range);
         }
 
-        int root = 0;
+        public List<NPCInstance> GatherNPCSInRange(BoundingBox range)
+        {
+            return m_npcTree.GatherRange(range);
+        }
+
         private void Update()
         {
             m_zoneUpdateTimer.Restart();
@@ -112,29 +115,18 @@ namespace Server.Zones
                 kvp.Value.Update(dt);
             }
 
-            if (m_playersArray.Length > 0)
+            lock (m_playerArray)
             {
-                //Stopwatch sw = Stopwatch.StartNew();
-                KDTree.LeftCount = 0;
-                KDTree.RightCount = 0;
-                if (m_buildLock.TryEnterWriteLock(30))
+                if (m_playerListIsDirty)
                 {
-                    root = KDTree.KDSort(m_playersArray, m_links, m_boundaries, 0, m_playersArray.Length - 1, false);
-                    KDTree.RightCount++;
-                    KDTree.LeftCount++;
-                    s_log.Trace("Balance: {0}", KDTree.LeftCount > KDTree.RightCount ? (float)KDTree.LeftCount / KDTree.RightCount : (float)KDTree.RightCount / KDTree.LeftCount);
-                    m_buildLock.ExitWriteLock();
+                    m_playerArray = m_playersInZone.Values.ToArray();
+                    m_playerListIsDirty = false;
                 }
-                else
-                {
-                    s_log.Warn("Rebuild skipped!");
-                }
-                //sw.Stop();
-                //if (sw.ElapsedMilliseconds > 10)
-                //{
-                //    s_log.Warn("Rebuild time was {0}ms", sw.ElapsedMilliseconds);
-                //}
             }
+
+            m_playerTree.Build(m_playerArray);
+
+            m_npcTree.Build(m_npcArray);
 
             m_lastUpdateTime = DateTime.Now;
             m_zoneUpdateTimer.Stop();
@@ -153,23 +145,7 @@ namespace Server.Zones
             }
         }
 
-        public void GatherNPCStatesForPlayer(PlayerPeer player, EntityStateUpdate[] entities, ref int bufferCount)
-        {
-            Vector2 playerPosition = player.Position;
-            foreach (var kvp in m_npcs)
-            {
-                NPCInstance npc = kvp.Value;
-                if (npc.IsDead)
-                {
-                    continue;
-                }
 
-                if (Vector2.DistanceSquared(playerPosition, npc.Position) <= RELEVANCE_DISTANCE_SQR)
-                {
-                    entities[bufferCount++] = npc.GetStateUpdate();
-                }
-            }
-        }
 
         public void AbilityUsed(AbilityInstance ability)
         {

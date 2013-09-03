@@ -2,6 +2,7 @@
 using Protocol;
 using Server.Abilities;
 using Server.Gameplay;
+using Server.NPC;
 using Server.Utility;
 using Server.Zones;
 using System;
@@ -14,7 +15,7 @@ namespace Server
 {
     public partial class PlayerPeer
     {
-        private const int RELEVANCE_DISTANCE_SQR = 40 * 40;
+        private static readonly Vector2 RELEVANCE_RANGE = new Vector2(40, 40);
 
         private Dictionary<int, Zone> m_zones;
 
@@ -72,7 +73,6 @@ namespace Server
             m_compressedY = psu.Y;
         }
 
-        private Vector2 m_relevanceRange = new Vector2(40, 40);
         private void BuildAndSendWorldStateUpdate()
         {
             m_worldState.CurrentServerTime = Environment.TickCount;
@@ -85,24 +85,14 @@ namespace Server
             m_worldState.PlayerIntroductions = null;
             m_worldState.NPCIntroductions = null;
 
-            List<IEntity> nearPlayers = new List<IEntity>();
             List<EntityStateUpdate> entityStates = new List<EntityStateUpdate>();
-            //Stopwatch sw = Stopwatch.StartNew();
-            CurrentZone.GatherEntities(new BoundingBox(Position - m_relevanceRange, Position + m_relevanceRange), nearPlayers);
-            //sw.Stop();
-            //if (sw.ElapsedMilliseconds > 50)
-            //{
-            //    Warn("Query time was {0}ms", sw.ElapsedMilliseconds);
-            //}
-            if (nearPlayers.Count > 100)
-            {
-                Warn("Hmm...");
-                return;
-            }
+
+            BoundingBox range = new BoundingBox(Position - RELEVANCE_RANGE, Position + RELEVANCE_RANGE);
+            List<PlayerPeer> nearPlayers = CurrentZone.GatherPlayersInRange(range);
 
             for (int i = 0; i < nearPlayers.Count; i++) 
             {
-                PlayerPeer player = (PlayerPeer)nearPlayers[i];
+                PlayerPeer player = nearPlayers[i];
                 EntityStateUpdate esu = player.GetStateUpdate();
                 if (player.ID != ID && esu != null)
                 {
@@ -122,38 +112,59 @@ namespace Server
                 }
             }
 
-            //CurrentZone.GatherNPCStatesForPlayer(this, m_stateBuffer, ref bufferCount);
+            List<NPCInstance> nearNPCs = CurrentZone.GatherNPCSInRange(range);
+
+            for (int i = 0; i < nearNPCs.Count; i++)
+            {
+                NPCInstance npc = nearNPCs[i];
+                if (!npc.IsDead)
+                {
+                    EntityStateUpdate esu = npc.GetStateUpdate();
+                    entityStates.Add(esu);
+
+                    if (!m_introducedNPCs.Contains(esu.ID))
+                    {
+                        if (m_worldState.NPCIntroductions == null)
+                        {
+                            m_worldState.NPCIntroductions = new List<NPCIntroduction>();
+                        }
+                        m_worldState.NPCIntroductions.Add(npc.Introduction);
+                        m_introducedNPCs.Add(npc.NPCModel.NPCID);
+                    }
+                }
+            }
 
             m_worldState.EntityStates = entityStates;
 
-            //foreach (NPCStateUpdate nsu in m_worldState.EntityStates.Where(s => s is NPCStateUpdate))
-            //{
-            //    if (!m_introducedNPCs.Contains(nsu.ID))
-            //    {
-            //        if (m_worldState.NPCIntroductions == null)
-            //        {
-            //            m_worldState.NPCIntroductions = new List<NPCIntroduction>();
-            //        }
 
-            //        NPCModel npcModel = m_npcRepository.GetNPCByID(nsu.ID);
-            //        if (npcModel != null)
-            //        {
-            //            NPCIntroduction introduction = new NPCIntroduction()
-            //            {
-            //                Level = 1,
-            //                MaxHealth = 200,
-            //                MaxPower = 200,
-            //                Model = npcModel.Model,
-            //                Name = npcModel.Name,
-            //                NPCID = npcModel.NPCID,
-            //                Scale = npcModel.Scale
-            //            };
+            foreach (NPCStateUpdate nsu in m_worldState.EntityStates.Where(s => s is NPCStateUpdate))
+            {
+                if (!m_introducedNPCs.Contains(nsu.ID))
+                {
+                    if (m_worldState.NPCIntroductions == null)
+                    {
+                        m_worldState.NPCIntroductions = new List<NPCIntroduction>();
+                    }
 
-            //            m_worldState.NPCIntroductions.Add(introduction);
-            //            m_introducedNPCs.Add(nsu.ID);
-            //        }
-            //    }
-            //}
+                    NPCModel npcModel = m_npcRepository.GetNPCByID(nsu.ID);
+                    if (npcModel != null)
+                    {
+                        NPCIntroduction introduction = new NPCIntroduction()
+                        {
+                            Level = 1,
+                            MaxHealth = 200,
+                            MaxPower = 200,
+                            Model = npcModel.Model,
+                            Name = npcModel.Name,
+                            NPCID = npcModel.NPCID,
+                            Scale = npcModel.Scale
+                        };
+
+                        m_worldState.NPCIntroductions.Add(introduction);
+                        m_introducedNPCs.Add(nsu.ID);
+                    }
+                }
+            }
 
             Send(m_worldState);
         }

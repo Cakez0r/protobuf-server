@@ -69,8 +69,9 @@
     <Compile Include="Abilities\AbilityInstance.cs" />
     <Compile Include="Abilities\AbilityState.cs" />
     <Compile Include="Utility\BoundingBox.cs" />
+    <Compile Include="Utility\IPositionable.cs" />
     <Compile Include="Utility\KDTree.cs" />
-    <Compile Include="Zones\ITargetable.cs" />
+    <Compile Include="Zones\IEntity.cs" />
     <Compile Include="Abilities\UseAbilityResult.cs" />
     <Compile Include="Gameplay\Formulas.cs" />
     <Compile Include="NPC\Behaviours\WanderRadiusNPCBehaviour.cs" />

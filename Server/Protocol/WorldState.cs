@@ -10,7 +10,6 @@ namespace Protocol
         [ProtoMember(1)]
         public int CurrentServerTime { get; set; }
 
-
         [ProtoMember(2)]
         public IEnumerable<EntityStateUpdate> EntityStates { get; set; }
 
