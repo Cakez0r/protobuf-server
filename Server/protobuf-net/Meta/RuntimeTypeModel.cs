@@ -16,6 +16,7 @@ using System.Reflection.Emit;
 
 using ProtoBuf.Serializers;
 using System.Threading;
+using System.IO;
 
 
 namespace ProtoBuf.Meta
@@ -1156,7 +1157,7 @@ namespace ProtoBuf.Meta
             int knownTypesCategory;
             FieldBuilder knownTypes;
             Type knownTypesLookupType;
-            WriteGetKeyImpl(type, hasInheritance, methodPairs, ilVersion, out il, out knownTypesCategory, out knownTypes, out knownTypesLookupType);
+            WriteGetKeyImpl(type, hasInheritance, methodPairs, ilVersion, assemblyName, out il, out knownTypesCategory, out knownTypes, out knownTypesLookupType);
 
             Compiler.CompilerContext ctx = WriteSerializeDeserialize(assemblyName, type, methodPairs, ilVersion, ref il);
 
@@ -1216,7 +1217,7 @@ namespace ProtoBuf.Meta
                 case KnownTypes_Dictionary:
                     {
                         Compiler.CompilerContext.LoadValue(il, types.Count);
-                        LocalBuilder loc = il.DeclareLocal(knownTypesLookupType);
+                        //LocalBuilder loc = il.DeclareLocal(knownTypesLookupType);
                         il.Emit(OpCodes.Newobj, knownTypesLookupType.GetConstructor(new Type[] { MapType(typeof(int)) }));
                         il.Emit(OpCodes.Stsfld, knownTypes);
                         int typeIndex = 0;
@@ -1285,18 +1286,18 @@ namespace ProtoBuf.Meta
             il = Override(type, "Serialize");
             Compiler.CompilerContext ctx = new Compiler.CompilerContext(il, false, true, methodPairs, this, ilVersion, assemblyName, MapType(typeof(object)));
             // arg0 = this, arg1 = key, arg2=obj, arg3=dest
-            Label[] jumpTable = new Label[types.Count];
+            Compiler.CodeLabel[] jumpTable = new Compiler.CodeLabel[types.Count];
             for (int i = 0; i < jumpTable.Length; i++)
             {
-                jumpTable[i] = il.DefineLabel();
+                jumpTable[i] = ctx.DefineLabel();
             }
             il.Emit(OpCodes.Ldarg_1);
-            il.Emit(OpCodes.Switch, jumpTable);
+            ctx.Switch(jumpTable);
             ctx.Return();
             for (int i = 0; i < jumpTable.Length; i++)
             {
                 SerializerPair pair = methodPairs[i];
-                il.MarkLabel(jumpTable[i]);
+                ctx.MarkLabel(jumpTable[i]);
                 il.Emit(OpCodes.Ldarg_2);
                 ctx.CastFromObject(pair.Type.Type);
                 il.Emit(OpCodes.Ldarg_3);
@@ -1309,16 +1310,16 @@ namespace ProtoBuf.Meta
             // arg0 = this, arg1 = key, arg2=obj, arg3=source
             for (int i = 0; i < jumpTable.Length; i++)
             {
-                jumpTable[i] = il.DefineLabel();
+                jumpTable[i] = ctx.DefineLabel();
             }
             il.Emit(OpCodes.Ldarg_1);
-            il.Emit(OpCodes.Switch, jumpTable);
+            ctx.Switch(jumpTable);
             ctx.LoadNullRef();
             ctx.Return();
             for (int i = 0; i < jumpTable.Length; i++)
             {
                 SerializerPair pair = methodPairs[i];
-                il.MarkLabel(jumpTable[i]);
+                ctx.MarkLabel(jumpTable[i]);
                 Type keyType = pair.Type.Type;
                 if (keyType.IsValueType)
                 {
@@ -1340,11 +1341,12 @@ namespace ProtoBuf.Meta
         }
 
         private const int KnownTypes_Array = 1, KnownTypes_Dictionary = 2, KnownTypes_Hashtable = 3, KnownTypes_ArrayCutoff = 20;
-        private void WriteGetKeyImpl(TypeBuilder type, bool hasInheritance, SerializerPair[] methodPairs, Compiler.CompilerContext.ILVersion ilVersion, out ILGenerator il, out int knownTypesCategory, out FieldBuilder knownTypes, out Type knownTypesLookupType)
+        private void WriteGetKeyImpl(TypeBuilder type, bool hasInheritance, SerializerPair[] methodPairs, Compiler.CompilerContext.ILVersion ilVersion, string assemblyName, out ILGenerator il, out int knownTypesCategory, out FieldBuilder knownTypes, out Type knownTypesLookupType)
         {
 
             il = Override(type, "GetKeyImpl");
-
+            Compiler.CompilerContext ctx = new Compiler.CompilerContext(il, false, false, methodPairs, this, ilVersion, assemblyName, MapType(typeof(System.Type), true));
+            
             if (types.Count <= KnownTypes_ArrayCutoff)
             {
                 knownTypesCategory = KnownTypes_Array;
@@ -1395,14 +1397,14 @@ namespace ProtoBuf.Meta
                                 }
                                 else
                                 {   // add a new unique label
-                                    getKeyLabels.Add(il.DefineLabel());
+                                    getKeyLabels.Add(ctx.DefineLabel());
                                     lastKey = methodPairs[i].BaseKey;
                                 }
                             }
-                            Label[] subtypeLabels = new Label[getKeyLabels.Count];
+                            Compiler.CodeLabel[] subtypeLabels = new Compiler.CodeLabel[getKeyLabels.Count];
                             getKeyLabels.CopyTo(subtypeLabels, 0);
 
-                            il.Emit(OpCodes.Switch, subtypeLabels);
+                            ctx.Switch(subtypeLabels);
                             il.Emit(OpCodes.Ldloc_0); // not a sub-type; use the original value
                             il.Emit(OpCodes.Ret);
 
@@ -1424,7 +1426,7 @@ namespace ProtoBuf.Meta
                                             break;
                                         }
                                     }
-                                    il.MarkLabel(subtypeLabels[i]);
+                                    ctx.MarkLabel(subtypeLabels[i]);
                                     Compiler.CompilerContext.LoadValue(il, keyIndex);
                                     il.Emit(OpCodes.Ret);
                                 }

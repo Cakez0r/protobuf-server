@@ -1,5 +1,6 @@
-﻿using ProtoBuf.Meta;
-using System;
+﻿using System;
+using System.Collections;
+using ProtoBuf.Meta;
 
 namespace ProtoBuf
 {

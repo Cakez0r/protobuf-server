@@ -1,9 +1,10 @@
 ﻿#if FEAT_SERVICEMODEL && PLAT_XMLSERIALIZER && !NO_GENERICS
-using ProtoBuf.Meta;
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.ServiceModel.Description;
+using System.Xml;
+using ProtoBuf.Meta;
 
 namespace ProtoBuf.ServiceModel
 {
