@@ -8,15 +8,15 @@ namespace ServerBenchmark
 {
     public class TestPeer : NetPeer
     {
-        private const float SPEED = 8;
+        private const float SPEED = 4;
 
         private Random m_rand;
         private PlayerStateUpdate_C2S m_psu;
 
         private Vector2 m_target;
 
-        private Vector2 m_min = new Vector2(0, 0);
-        private Vector2 m_max = new Vector2(6000, 6000);
+        private Vector2 m_min = new Vector2(2000, 2000);
+        private Vector2 m_max = new Vector2(3000, 3000);
 
         private Vector2 m_position;
 

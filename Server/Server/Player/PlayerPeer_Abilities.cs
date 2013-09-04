@@ -26,6 +26,7 @@ namespace Server
 
         private async void Handle_UseAbility(UseAbility_C2S ability)
         {
+            IEntity target = default(IEntity);
             AbilityModel abilityModel = m_abilityRepository.GetAbilityByID(ability.AbilityID);
             UseAbilityResult result = UseAbilityResult.Failed;
 
@@ -49,7 +50,6 @@ namespace Server
             }
             else
             {
-                IEntity target = default(IEntity);
                 if (ability.TargetID != 0)
                 {
                     target = await CurrentZone.GetTarget(ability.TargetID);
@@ -82,6 +82,22 @@ namespace Server
                     }
 
                     result = await m_lastAbility.RunAbility();
+                }
+            }
+
+            if (result == UseAbilityResult.OK)
+            {
+                List<PlayerPeer> nearPlayers = m_nearPlayers;
+
+                AbilityUsedNotification notification = new AbilityUsedNotification();
+                notification.AbilityID = abilityModel.AbilityID;
+                notification.SourceID = ID;
+                notification.TargetID = target != null ? target.ID : 0;
+                notification.Timestamp = Environment.TickCount;
+
+                for (int i = 0; i < nearPlayers.Count; i++)
+                {
+                    nearPlayers[i].EnqueueSend(notification);
                 }
             }
 

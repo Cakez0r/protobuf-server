@@ -94,7 +94,8 @@ namespace Server
                     VelX = m_compressedVelX,
                     VelY = m_compressedVelY,
                     X = m_compressedX,
-                    Y = m_compressedY
+                    Y = m_compressedY,
+                    CastingEffect = m_lastAbility.State == AbilityState.Casting ? (ushort)m_lastAbility.Ability.AbilityID : (ushort)0
                 };
 
                 if (CurrentZone != null)
@@ -188,6 +189,11 @@ namespace Server
                     m_playerRepository.UpdatePlayerStat(stat.PlayerStatID, stat.PlayerID, stat.StatID, stat.StatValue);
                 }
             }
+        }
+
+        public void EnqueueSend(Packet p)
+        {
+            Fiber.Enqueue(() => Send(p));
         }
 
         private void Handle_TimeSync(TimeSync_C2S sync)

@@ -49,6 +49,9 @@ namespace Server
 
         private PlayerStateUpdate_S2C m_latestStateUpdate;
 
+        private List<PlayerPeer> m_nearPlayers = new List<PlayerPeer>();
+        private List<NPCInstance> m_nearNPCs = new List<NPCInstance>();
+
         private short m_compressedVelX;
         private short m_compressedVelY;
         private ushort m_compressedX;
@@ -135,36 +138,8 @@ namespace Server
             }
 
             m_worldState.EntityStates = entityStates;
-
-
-            foreach (NPCStateUpdate nsu in m_worldState.EntityStates.Where(s => s is NPCStateUpdate))
-            {
-                if (!m_introducedNPCs.Contains(nsu.ID))
-                {
-                    if (m_worldState.NPCIntroductions == null)
-                    {
-                        m_worldState.NPCIntroductions = new List<NPCIntroduction>();
-                    }
-
-                    NPCModel npcModel = m_npcRepository.GetNPCByID(nsu.ID);
-                    if (npcModel != null)
-                    {
-                        NPCIntroduction introduction = new NPCIntroduction()
-                        {
-                            Level = 1,
-                            MaxHealth = 200,
-                            MaxPower = 200,
-                            Model = npcModel.Model,
-                            Name = npcModel.Name,
-                            NPCID = npcModel.NPCID,
-                            Scale = npcModel.Scale
-                        };
-
-                        m_worldState.NPCIntroductions.Add(introduction);
-                        m_introducedNPCs.Add(nsu.ID);
-                    }
-                }
-            }
+            m_nearNPCs = nearNPCs;
+            m_nearPlayers = nearPlayers;
 
             Send(m_worldState);
         }
