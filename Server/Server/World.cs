@@ -71,7 +71,7 @@ namespace Server
         {
             sock.NoDelay = true;
 
-            PlayerPeer p = new PlayerPeer(sock, m_accountRepository, m_npcRepository, m_playerRepository, m_abilityRepository, m_zones);
+            PlayerPeer p = new PlayerPeer(sock, m_accountRepository, m_playerRepository, m_abilityRepository, m_zones);
 
             //NOTE: Code here will block the AcceptSocket loop, so make sure it stays lean
             m_players[p.ID] = p;

@@ -20,5 +20,6 @@ namespace Server.Zones
         void ApplyXPDelta(int delta, IEntity source);
 
         EntityStateUpdate GetStateUpdate();
+        EntityIntroduction GetIntroduction();
     }
 }

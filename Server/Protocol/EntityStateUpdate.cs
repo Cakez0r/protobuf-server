@@ -7,9 +7,7 @@ using System.Text;
 namespace Protocol
 {
     [ProtoContract]
-    [ProtoInclude(12, typeof(PlayerStateUpdate_S2C))]
-    [ProtoInclude(13, typeof(NPCStateUpdate))]
-    public abstract class EntityStateUpdate
+    public class EntityStateUpdate
     {
         [ProtoMember(1)]
         public int ID { get; set; }

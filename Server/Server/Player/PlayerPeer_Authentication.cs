@@ -4,6 +4,7 @@ using Protocol;
 using Server.Gameplay;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -51,6 +52,13 @@ namespace Server
                         response.Y = (float)m_player.Y;
                         response.ZoneID = m_player.Map;
 
+                        response.Stats = new Dictionary<int, float>();
+
+                        foreach (var kvp in m_stats)
+                        {
+                            response.Stats.Add((int)kvp.Key, kvp.Value.StatValue);
+                        }
+
                         ChangeZone(response.ZoneID);
 
                         IsAuthenticated = true;
@@ -83,7 +91,7 @@ namespace Server
                 Power = (ushort)(MaxPower * m_player.Power);
                 Name = account.Username;
 
-                Introduction = new PlayerIntroduction() { PlayerID = ID, Name = player.Name };
+                RecreateIntroduction();
 
                 Info("Player loaded for account {0}", account.Username);
                 result = AuthenticationAttempt_S2C.ResponseCode.OK;
@@ -94,6 +102,19 @@ namespace Server
                 Info("Username: {1} has no characters but tried to log in.", account.Username);
             }
             return result;
+        }
+
+        private void RecreateIntroduction()
+        {
+            m_introduction = new EntityIntroduction()
+            {
+                ID = ID,
+                Name = Name,
+                Level = Level,
+                MaxHealth = MaxHealth,
+                MaxPower = MaxPower,
+                ModelID = 0
+            };
         }
 
         private static string HashPassword(string username, string password)

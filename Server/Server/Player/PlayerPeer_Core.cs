@@ -51,12 +51,11 @@ namespace Server
             set;
         }
 
-        public PlayerPeer(Socket socket, IAccountRepository accountRepository, INPCRepository npcRepository, IPlayerRepository playerRepository, IAbilityRepository abilityRepository, Dictionary<int, Zone> zones)
+        public PlayerPeer(Socket socket, IAccountRepository accountRepository, IPlayerRepository playerRepository, IAbilityRepository abilityRepository, Dictionary<int, Zone> zones)
             : base(socket)
         {
             m_accountRepository = accountRepository;
             m_playerRepository = playerRepository;
-            m_npcRepository = npcRepository;
             m_abilityRepository = abilityRepository;
             m_zones = zones;
 
@@ -72,7 +71,7 @@ namespace Server
 
             m_authenticatedHandler.SetRoute<TimeSync_C2S>(Handle_TimeSync);
             m_authenticatedHandler.SetRoute<ChatMessage>(Handle_ChatMessage);
-            m_authenticatedHandler.SetRoute<PlayerStateUpdate_C2S>(Handle_PlayerStateUpdate);
+            m_authenticatedHandler.SetRoute<PlayerStateUpdate>(Handle_PlayerStateUpdate);
             m_authenticatedHandler.SetRoute<UseAbility_C2S>(Handle_UseAbility);
             m_authenticatedHandler.SetRoute<StopCasting>(Handle_StopCasting);
 
@@ -83,7 +82,7 @@ namespace Server
         {
             if (IsAuthenticated)
             {
-                m_latestStateUpdate = new PlayerStateUpdate_S2C()
+                m_latestStateUpdate = new EntityStateUpdate()
                 {
                     ID = ID,
                     Health = (ushort)Health,

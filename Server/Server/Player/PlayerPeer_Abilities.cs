@@ -87,7 +87,7 @@ namespace Server
 
             if (result == UseAbilityResult.OK)
             {
-                List<PlayerPeer> nearPlayers = m_nearPlayers;
+                List<IEntity> nearPlayers = m_nearEntities;
 
                 AbilityUsedNotification notification = new AbilityUsedNotification();
                 notification.AbilityID = abilityModel.AbilityID;
@@ -97,7 +97,11 @@ namespace Server
 
                 for (int i = 0; i < nearPlayers.Count; i++)
                 {
-                    nearPlayers[i].EnqueueSend(notification);
+                    PlayerPeer player = nearPlayers[i] as PlayerPeer;
+                    if (player != null)
+                    {
+                        player.EnqueueSend(notification);
+                    }
                 }
             }
 
@@ -121,8 +125,6 @@ namespace Server
             }
         }
 
-
-
         private float GetStatValue(StatType statType)
         {
             PlayerStatModel stat;
@@ -133,6 +135,19 @@ namespace Server
             }
 
             return 0;
+        }
+
+        private void SendStatChanges(params StatType[] stats)
+        {
+            StatsChangedNotification scn = new StatsChangedNotification();
+            scn.NewStats = new Dictionary<int, float>();
+
+            foreach (StatType st in stats)
+            {
+                scn.NewStats.Add((int)st, GetStatValue(st));
+            }
+
+            EnqueueSend(scn);
         }
     }
 }

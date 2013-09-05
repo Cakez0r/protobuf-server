@@ -11,7 +11,7 @@ namespace ServerBenchmark
         private const float SPEED = 4;
 
         private Random m_rand;
-        private PlayerStateUpdate_C2S m_psu;
+        private PlayerStateUpdate m_psu;
 
         private Vector2 m_target;
 
@@ -26,7 +26,7 @@ namespace ServerBenchmark
 
             m_position = GetRandomTarget();
 
-            m_psu = new PlayerStateUpdate_C2S()
+            m_psu = new PlayerStateUpdate()
             {
                 Rot = 0,
                 Time = Environment.TickCount,

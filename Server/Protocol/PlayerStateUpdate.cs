@@ -3,7 +3,7 @@
 namespace Protocol
 {
     [ProtoContract]
-    public class PlayerStateUpdate_C2S : Packet
+    public class PlayerStateUpdate : Packet
     {
         [ProtoMember(1)]
         public ushort X { get; set; }
@@ -25,10 +25,5 @@ namespace Protocol
 
         [ProtoMember(7)]
         public short VelY { get; set; }
-    }
-
-    [ProtoContract]
-    public class PlayerStateUpdate_S2C : EntityStateUpdate
-    {
     }
 }

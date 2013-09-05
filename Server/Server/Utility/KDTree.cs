@@ -80,14 +80,22 @@ namespace Server.Utility
         {
             List<T> result = new List<T>();
 
+            GatherRange(range, result);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Gather all objects that are contained within the given range.
+        /// </summary>
+        public void GatherRange(BoundingBox range, List<T> result)
+        {
             if (m_entities.Length > 0)
             {
                 m_lock.EnterReadLock();
                 Query(m_entities, m_nodes, ref range, m_root, result);
                 m_lock.ExitReadLock();
             }
-
-            return result;
         }
 
         private static int KDSort(T[] values, List<Node> nodes, int start, int end, bool sortByX)

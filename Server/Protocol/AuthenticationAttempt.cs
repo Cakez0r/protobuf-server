@@ -1,4 +1,5 @@
 ﻿using ProtoBuf;
+using System.Collections.Generic;
 
 namespace Protocol
 {
@@ -37,5 +38,8 @@ namespace Protocol
 
         [ProtoMember(5)]
         public float Y { get; set; }
+
+        [ProtoMember(6)]
+        public Dictionary<int, float> Stats { get; set; }
     }
 }

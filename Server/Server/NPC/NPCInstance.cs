@@ -20,7 +20,6 @@ namespace Server.NPC
 
         public NPCModel NPCModel { get; private set; }
         public NPCSpawnModel NPCSpawnModel { get; private set; }
-        public NPCIntroduction Introduction { get; private set; }
 
         private List<INPCBehaviour> m_behaviours;
 
@@ -28,7 +27,8 @@ namespace Server.NPC
 
         private Fiber m_fiber;
 
-        private NPCStateUpdate m_stateUpdate;
+        private EntityStateUpdate m_stateUpdate;
+        private EntityIntroduction m_introduction;
 
         public Vector2 Position { get; set; }
 
@@ -49,7 +49,7 @@ namespace Server.NPC
 
         public bool IsDead { get; private set; }
 
-        public byte Level { get { return 1; } } 
+        public byte Level { get { return 1; } }
 
         public NPCInstance(Fiber fiber, NPCModel npc, NPCSpawnModel npcSpawn, List<INPCBehaviour> behaviours, IReadOnlyDictionary<StatType, float> stats)
         {
@@ -58,28 +58,29 @@ namespace Server.NPC
             m_stats = stats;
             m_fiber = fiber;
 
-            Introduction = new NPCIntroduction()
-            {
-                Level = 1,
-                MaxHealth = 200,
-                MaxPower = 200,
-                Model = npc.Model,
-                Name = npc.Name,
-                NPCID = npc.NPCID,
-                Scale = npc.Scale
-            };
-
             Position = new Vector2((float)npcSpawn.X, (float)npcSpawn.Y);
             ID = IDGenerator.GetNextID();
 
-            Health = Formulas.StaminaToHealth(GetStatValue(StatType.Stamina));
-            MaxHealth = Health;
+            MaxHealth = Formulas.StaminaToHealth(GetStatValue(StatType.Stamina));
+            Health = MaxHealth;
 
-            m_stateUpdate = new NPCStateUpdate()
+            MaxPower = Formulas.LevelToPower(Level);
+            Power = MaxPower;
+
+            m_introduction = new EntityIntroduction()
+            {
+                ID = ID,
+                Level = (byte)NPCModel.Level,
+                MaxHealth = MaxHealth,
+                MaxPower = MaxPower,
+                Name = Name,
+                ModelID = NPCModel.ModelID
+            };
+
+            m_stateUpdate = new EntityStateUpdate()
             {
                 Rotation = Compression.RotationToByte(npcSpawn.Rotation),
-                ID = npc.NPCID,
-                NPCInstanceID = ID,
+                ID = ID,
                 Health = Health,
                 Power = 100,
             };
@@ -136,6 +137,8 @@ namespace Server.NPC
             IsDead = true;
             m_fiber.Schedule(Respawn, NPCSpawnModel.Frequency);
 
+            killer.ApplyXPDelta(NPCModel.XP, this);
+
             Info("Killed by {0}", killer == null ? "[Unknown]" : killer.Name);
         }
 
@@ -145,6 +148,8 @@ namespace Server.NPC
             Rotation = Compression.RotationToByte(NPCSpawnModel.Rotation);
 
             Health = MaxHealth;
+            Power = MaxPower;
+
             IsDead = false;
 
             Info("Respawned");
@@ -197,6 +202,11 @@ namespace Server.NPC
         public EntityStateUpdate GetStateUpdate()
         {
             return m_stateUpdate;
+        }
+
+        public EntityIntroduction GetIntroduction()
+        {
+            return m_introduction;
         }
 
         #region Logging

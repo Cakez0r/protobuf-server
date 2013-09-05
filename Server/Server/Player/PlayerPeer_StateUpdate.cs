@@ -21,11 +21,7 @@ namespace Server
 
         private WorldState m_worldState = new WorldState();
 
-        private Dictionary<int, PlayerIntroduction> m_introducedPlayers = new Dictionary<int, PlayerIntroduction>();
-        public PlayerIntroduction Introduction { get; private set; }
-
-        private HashSet<int> m_introducedNPCs = new HashSet<int>();
-        private INPCRepository m_npcRepository;
+        private Dictionary<int, EntityIntroduction> m_introducedEntities = new Dictionary<int, EntityIntroduction>();
 
         public Vector2 Position { get; private set; }
         public Vector2 Velocity { get; private set; }
@@ -47,17 +43,17 @@ namespace Server
 
         public Zone CurrentZone { get; private set; }
 
-        private PlayerStateUpdate_S2C m_latestStateUpdate;
+        private EntityStateUpdate m_latestStateUpdate;
+        private EntityIntroduction m_introduction;
 
-        private List<PlayerPeer> m_nearPlayers = new List<PlayerPeer>();
-        private List<NPCInstance> m_nearNPCs = new List<NPCInstance>();
+        private List<IEntity> m_nearEntities = new List<IEntity>();
 
         private short m_compressedVelX;
         private short m_compressedVelY;
         private ushort m_compressedX;
         private ushort m_compressedY;
 
-        private void Handle_PlayerStateUpdate(PlayerStateUpdate_C2S psu)
+        private void Handle_PlayerStateUpdate(PlayerStateUpdate psu)
         {
             if (m_lastAbility.State == AbilityState.Casting && (psu.X != m_compressedX || psu.Y != m_compressedY))
             {
@@ -80,66 +76,39 @@ namespace Server
         {
             m_worldState.CurrentServerTime = Environment.TickCount;
             m_worldState.Health = Health;
-            m_worldState.MaxHealth = MaxHealth;
             m_worldState.Power = Power;
-            m_worldState.MaxPower = MaxPower;
-            m_worldState.XP = GetStatValue(StatType.XP);
-
-            m_worldState.PlayerIntroductions = null;
-            m_worldState.NPCIntroductions = null;
 
             List<EntityStateUpdate> entityStates = new List<EntityStateUpdate>();
 
+            m_worldState.EntityIntroductions = null;
+
             BoundingBox range = new BoundingBox(Position - RELEVANCE_RANGE, Position + RELEVANCE_RANGE);
-            List<PlayerPeer> nearPlayers = CurrentZone.GatherPlayersInRange(range);
+            List<IEntity> nearEntities = CurrentZone.GatherEntitiesInRange(range);
 
-            for (int i = 0; i < nearPlayers.Count; i++) 
+            for (int i = 0; i < nearEntities.Count; i++) 
             {
-                PlayerPeer player = nearPlayers[i];
-                EntityStateUpdate esu = player.GetStateUpdate();
-                if (player.ID != ID && esu != null)
+                IEntity entity = nearEntities[i];
+                EntityStateUpdate esu = entity.GetStateUpdate();
+                if (entity.ID != ID && esu != null && !entity.IsDead)
                 {
-                    entityStates.Add(player.GetStateUpdate());
+                    entityStates.Add(entity.GetStateUpdate());
 
-                    PlayerIntroduction introduction = player.Introduction;
-                    if (!m_introducedPlayers.ContainsKey(esu.ID) || m_introducedPlayers[esu.ID] != introduction)
+                    EntityIntroduction introduction = entity.GetIntroduction();
+                    if (!m_introducedEntities.ContainsKey(esu.ID) || m_introducedEntities[esu.ID] != introduction)
                     {
-                        if (m_worldState.PlayerIntroductions == null)
+                        if (m_worldState.EntityIntroductions == null)
                         {
-                            m_worldState.PlayerIntroductions = new List<PlayerIntroduction>();
+                            m_worldState.EntityIntroductions = new List<EntityIntroduction>();
                         }
 
-                        m_worldState.PlayerIntroductions.Add(introduction);
-                        m_introducedPlayers[esu.ID] = introduction;
-                    }
-                }
-            }
-
-            List<NPCInstance> nearNPCs = CurrentZone.GatherNPCSInRange(range);
-
-            for (int i = 0; i < nearNPCs.Count; i++)
-            {
-                NPCInstance npc = nearNPCs[i];
-                if (!npc.IsDead)
-                {
-                    EntityStateUpdate esu = npc.GetStateUpdate();
-                    entityStates.Add(esu);
-
-                    if (!m_introducedNPCs.Contains(esu.ID))
-                    {
-                        if (m_worldState.NPCIntroductions == null)
-                        {
-                            m_worldState.NPCIntroductions = new List<NPCIntroduction>();
-                        }
-                        m_worldState.NPCIntroductions.Add(npc.Introduction);
-                        m_introducedNPCs.Add(npc.NPCModel.NPCID);
+                        m_worldState.EntityIntroductions.Add(introduction);
+                        m_introducedEntities[esu.ID] = introduction;
                     }
                 }
             }
 
             m_worldState.EntityStates = entityStates;
-            m_nearNPCs = nearNPCs;
-            m_nearPlayers = nearPlayers;
+            m_nearEntities = nearEntities;
 
             Send(m_worldState);
         }
@@ -177,8 +146,11 @@ namespace Server
                 {
                     Level = newLevel;
                     MaxPower = (ushort)Formulas.LevelToPower(Level);
+                    RecreateIntroduction();
                     Info("Dinged level {0}", newLevel);
                 }
+
+                SendStatChanges(StatType.XP);
             });
         }
 
@@ -221,6 +193,11 @@ namespace Server
         public EntityStateUpdate GetStateUpdate()
         {
             return m_latestStateUpdate;
+        }
+
+        public EntityIntroduction GetIntroduction()
+        {
+            return m_introduction;
         }
     }
 }

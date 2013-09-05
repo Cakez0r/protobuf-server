@@ -59,14 +59,13 @@
     <Compile Include="ChatMessage.cs" />
     <Compile Include="Compression.cs" />
     <Compile Include="EntityStateUpdate.cs" />
-    <Compile Include="NPCIntroduction.cs" />
-    <Compile Include="NPCStateUpdate.cs" />
+    <Compile Include="EntityIntroduction.cs" />
     <Compile Include="Ping.cs" />
     <Compile Include="Packet.cs" />
-    <Compile Include="PlayerIntroduction.cs" />
     <Compile Include="PlayerStateUpdate.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ProtocolUtility.cs" />
+    <Compile Include="StatsChangedNotification.cs" />
     <Compile Include="StopCasting.cs" />
     <Compile Include="TimeSync.cs" />
     <Compile Include="UseAbility.cs" />

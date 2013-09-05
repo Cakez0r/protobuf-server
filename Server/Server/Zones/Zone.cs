@@ -25,7 +25,7 @@ namespace Server.Zones
         private Fiber m_fiber = new Fiber();
 
         private ConcurrentDictionary<int, PlayerPeer> m_playersInZone = new ConcurrentDictionary<int, PlayerPeer>();
-        private KDTree<PlayerPeer> m_playerTree = new KDTree<PlayerPeer>();
+        private KDTree<IEntity> m_playerTree = new KDTree<IEntity>();
         private PlayerPeer[] m_playerArray;
         private bool m_playerListIsDirty;
 
@@ -35,7 +35,7 @@ namespace Server.Zones
         private List<NPCSpawnModel> m_npcSpawns;
 
         private Dictionary<int, NPCInstance> m_npcs = new Dictionary<int, NPCInstance>();
-        private KDTree<NPCInstance> m_npcTree = new KDTree<NPCInstance>();
+        private KDTree<IEntity> m_npcTree = new KDTree<IEntity>();
         private NPCInstance[] m_npcArray;
 
         private DateTime m_lastUpdateTime = DateTime.Now;
@@ -95,14 +95,14 @@ namespace Server.Zones
             }
         }
 
-        public List<PlayerPeer> GatherPlayersInRange(BoundingBox range)
+        public List<IEntity> GatherEntitiesInRange(BoundingBox range)
         {
-            return m_playerTree.GatherRange(range);
-        }
+            List<IEntity> result = new List<IEntity>();
 
-        public List<NPCInstance> GatherNPCSInRange(BoundingBox range)
-        {
-            return m_npcTree.GatherRange(range);
+            m_playerTree.GatherRange(range, result);
+            m_npcTree.GatherRange(range, result);
+
+            return result;
         }
 
         private void Update()
@@ -175,11 +175,14 @@ namespace Server.Zones
 
         public void SendMessageToZone(string sender, string message)
         {
-            //ChatMessage cm = new ChatMessage() { SenderName = sender, Message = message };
-            //foreach (PlayerPeer player in PlayersInZone)
-            //{
-            //    player.Send(cm);
-            //}
+            m_fiber.Enqueue(() =>
+            {
+                ChatMessage cm = new ChatMessage() { SenderName = sender, Message = message };
+                for (int i = 0; i < m_playerArray.Length; i++)
+                {
+                    m_playerArray[i].Send(cm);
+                }
+            }, false);
         }
     }
 }

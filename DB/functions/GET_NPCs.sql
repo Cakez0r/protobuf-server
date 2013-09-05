@@ -4,9 +4,8 @@ AS $$
     SELECT
         NPCID,
         Name,
-        Model,
         Scale,
-        InternalName
+        ModelID
     FROM
         NPC;
 $$ LANGUAGE SQL;
