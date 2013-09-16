@@ -17,6 +17,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime;
 using System.Threading;
 
 namespace Server
@@ -27,6 +28,8 @@ namespace Server
 
         private static void Main(string[] args)
         {
+            GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
+
             ServerConfiguration config = (ServerConfiguration)ConfigurationManager.GetSection("server");
 
             s_log.Info("Creating repositories...");
