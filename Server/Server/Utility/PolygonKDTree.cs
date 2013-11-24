@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Server.Utility;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -8,29 +9,14 @@ using System.Threading.Tasks;
 
 namespace Server.Utility
 {
-    /// <summary>
-    /// An (imbalanced) two-dimensional KDTree that can be quickly queried for points within a given range.
-    /// </summary>
-    public class KDTree<T> where T : IPositionable
+    public class PolygonKDTree
     {
-        /// <summary>
-        /// Internal structure to represent nodes in the tree
-        /// </summary>
         private class Node
         {
-            /// <summary>
-            /// Index of the node containing objects that are positioned before this node's partition
-            /// </summary>
             public int Before { get; set; }
 
-            /// <summary>
-            /// Index of the node containing objects that are positioned after this node's partition
-            /// </summary>
             public int After { get; set; }
 
-            /// <summary>
-            /// The bounds of this branch of the tree and all child nodes
-            /// </summary>
             public BoundingBox Bounds { get; set; }
 
             public Node()
@@ -40,110 +26,113 @@ namespace Server.Utility
             }
         }
 
-        private T[] m_entities = new T[0];
+        private class XComparer : IComparer<Polygon>
+        {
+            private static IComparer<Polygon> s_instance = new XComparer();
+            public static IComparer<Polygon> Instance
+            {
+                get { return s_instance; }
+            }
+
+            public int Compare(Polygon x, Polygon y)
+            {
+                return x.Center.X.CompareTo(y.Center.X);
+            }
+        }
+
+        private class YComparer : IComparer<Polygon>
+        {
+            private static IComparer<Polygon> s_instance = new YComparer();
+            public static IComparer<Polygon> Instance
+            {
+                get { return s_instance; }
+            }
+
+            public int Compare(Polygon x, Polygon y)
+            {
+                return x.Center.Y.CompareTo(y.Center.Y);
+            }
+        }
+
+        private Polygon[] m_polygons = new Polygon[0];
         private List<Node> m_nodes = new List<Node>();
-        private ReaderWriterLockSlim m_lock = new ReaderWriterLockSlim();
         private int m_root;
 
-        /// <summary>
-        /// Build the KDTree from the given array. 
-        /// Note that the given array will be reordered and used internally. You should not mutate the array once it's been passed here.
-        /// </summary>
-        public void Build(T[] entities)
+        public PolygonKDTree(Polygon[] polygons)
         {
-            if (entities.Length > 0)
+            if (polygons.Length > 0)
             {
-                m_lock.EnterWriteLock();
-                m_entities = entities;
-                int count = m_entities.Length;
+                m_polygons = polygons;
+                int count = m_polygons.Length;
                 if (m_nodes.Capacity < count)
                 {
                     m_nodes.Capacity = count;
                 }
 
-                //Add more nodes to the node list if we don't have enough
                 while (m_nodes.Count < count)
                 {
                     m_nodes.Add(new Node());
                 }
 
-                //Start sorting!
-                m_root = KDSort(m_entities, m_nodes, 0, count - 1, false);
-                m_lock.ExitWriteLock();
+                m_root = KDSort(m_polygons, m_nodes, 0, count - 1, false);
             }
         }
 
-        /// <summary>
-        /// Gather all objects that are contained within the given range.
-        /// </summary>
-        public List<T> GatherRange(BoundingBox range)
+        public List<Polygon> GatherRange(BoundingBox range)
         {
-            List<T> result = new List<T>();
+            List<Polygon> result = new List<Polygon>();
 
             GatherRange(range, result);
 
             return result;
         }
 
-        /// <summary>
-        /// Gather all objects that are contained within the given range.
-        /// </summary>
-        public void GatherRange(BoundingBox range, List<T> result)
+        public void GatherRange(BoundingBox range, List<Polygon> result)
         {
-            if (m_entities.Length > 0)
+            if (m_polygons.Length > 0)
             {
-                m_lock.EnterReadLock();
-                Query(m_entities, m_nodes, ref range, m_root, result);
-                m_lock.ExitReadLock();
+                Query(m_polygons, m_nodes, ref range, m_root, result);
             }
         }
 
-        private static int KDSort(T[] values, List<Node> nodes, int start, int end, bool sortByX)
+        private static int KDSort(Polygon[] values, List<Node> nodes, int start, int end, bool sortByX)
         {
-            //Partition the array by the middle element. Use the median value as the pivot to make a balanced tree (google QuickSelect).
+            Array.Sort<Polygon>(values, start, end - start, sortByX ? XComparer.Instance : YComparer.Instance);
             int pivot = Partition(values, (start + end) / 2, start, end, sortByX);
 
-            //Create the bounds for this node
             BoundingBox bounds;
             bounds.Min = new Vector2(float.MaxValue);
             bounds.Max = new Vector2(float.MinValue);
 
             for (int i = start; i <= end; i++)
             {
-                //Grow the bounding box if this point doesn't fit within it
-                Vector2 position = values[i].Position;
-                if (position.X > bounds.Max.X) bounds.Max.X = position.X;
-                if (position.Y > bounds.Max.Y) bounds.Max.Y = position.Y;
-                if (position.X < bounds.Min.X) bounds.Min.X = position.X;
-                if (position.Y < bounds.Min.Y) bounds.Min.Y = position.Y;
+                BoundingBox bb = values[i].Bounds;
+                bounds.Encapsulate(bb);
             }
 
             nodes[pivot].Bounds = bounds;
 
-            //Grab the current node
             Node node = nodes[pivot];
             node.Before = -1;
             node.After = -1;
 
             if (start < pivot)
             {
-                //If there's more than one element before the pivot in this partition, divide it further
                 node.Before = KDSort(values, nodes, start, pivot - 1, !sortByX);
             }
 
             if (end > pivot)
             {
-                //If there's more than one element after the pivot in this partition, divide it further
                 node.After = KDSort(values, nodes, pivot + 1, end, !sortByX);
             }
 
             return pivot;
         }
 
-        private static int Partition(T[] values, int pivot, int start, int end, bool sortByX)
+        private static int Partition(Polygon[] values, int pivot, int start, int end, bool sortByX)
         {
             //Grab the position of the pivot element
-            Vector2 pivotPosition = values[pivot].Position;
+            Vector2 pivotPosition = values[pivot].Center;
 
             //Move the pivot to the end
             Swap(values, pivot, end);
@@ -156,7 +145,7 @@ namespace Server.Utility
             for (int i = start; i < end; ++i)
             {
                 //Grab the i-th  position and get the comparand
-                Vector2 currentPosition = values[i].Position;
+                Vector2 currentPosition = values[i].Center;
                 float currentValue = sortByX ? currentPosition.X : currentPosition.Y;
 
                 if (currentValue < pivotValue)
@@ -177,7 +166,7 @@ namespace Server.Utility
             return next;
         }
 
-        private static void Query(T[] values, List<Node> nodes, ref BoundingBox range, int root, IList<T> result)
+        private static void Query(Polygon[] values, List<Node> nodes, ref BoundingBox range, int root, IList<Polygon> result)
         {
             ContainmentType ct = range.Contains(nodes[root].Bounds);
 
@@ -201,14 +190,14 @@ namespace Server.Utility
                 }
 
                 //And check whether this node's object lies within the bounds
-                if (range.Contains(values[root].Position) != ContainmentType.Disjoint)
+                if (range.Contains(values[root].Bounds) != ContainmentType.Disjoint)
                 {
                     result.Add(values[root]);
                 }
             }
         }
 
-        private static void GatherAll(T[] values, List<Node> nodes, int root, IList<T> result)
+        private static void GatherAll(Polygon[] values, List<Node> nodes, int root, IList<Polygon> result)
         {
             result.Add(values[root]);
 
@@ -225,9 +214,9 @@ namespace Server.Utility
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void Swap(T[] values, int a, int b)
+        private static void Swap(Polygon[] values, int a, int b)
         {
-            T tmp = values[a];
+            Polygon tmp = values[a];
             values[a] = values[b];
             values[b] = tmp;
         }

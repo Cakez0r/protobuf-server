@@ -1,8 +1,16 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 
 namespace Server.Utility
 {
     //Taken from MonoGame 24/11/2012
+
+    public enum Orientation
+    {
+        Colinear = 0,
+        Clockwise = 1,
+        CounterClockwise = 2
+    }
 
     public static class MathHelper
     {
@@ -14,6 +22,30 @@ namespace Server.Utility
         public const float PiOver4 = (float)(Math.PI / 4.0);
         public const float TwoPi = (float)(Math.PI * 2.0);
 
+        public const double Rad2Deg = 57.295779513082320876798154814105;
+        public const double Deg2Rad = 0.017453292519943295769236907684886;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Orientation CalculateOrientation(Vector2 p, Vector2 q, Vector2 r)
+        {
+            // See 10th slides from following link for derivation of the formula
+            // http://www.dcs.gla.ac.uk/~pat/52233/slides/Geometry1x1.pdf
+
+            int val = (int)((q.Y - p.Y) * (r.X - q.X) - (q.X - p.X) * (r.Y - q.Y));
+
+            if (val == 0)
+            {
+                return Orientation.Colinear;
+            }
+            else if (val > 0)
+            {
+                return Orientation.Clockwise;
+            }
+
+            return Orientation.CounterClockwise;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Barycentric(float value1, float value2, float value3, float amount1, float amount2)
         {
             return value1 + (value2 - value1) * amount1 + (value3 - value1) * amount2;
@@ -31,6 +63,7 @@ namespace Server.Utility
                 (3.0 * value2 - value1 - 3.0 * value3 + value4) * amountCubed));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Clamp(float value, float min, float max)
         {
             // First we check to see if we're greater than the max
@@ -43,6 +76,7 @@ namespace Server.Utility
             return value;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Clamp(int value, int min, int max)
         {
             // First we check to see if we're greater than the max
@@ -53,11 +87,6 @@ namespace Server.Utility
 
             // There's no check to see if min > max.
             return value;
-        }
-
-        public static float Distance(float value1, float value2)
-        {
-            return Math.Abs(value1 - value2);
         }
 
         public static float Hermite(float value1, float tangent1, float value2, float tangent2, float amount)
@@ -80,20 +109,10 @@ namespace Server.Utility
             return (float)result;
         }
 
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Lerp(float value1, float value2, float amount)
         {
             return value1 + (value2 - value1) * amount;
-        }
-
-        public static float Max(float value1, float value2)
-        {
-            return Math.Max(value1, value2);
-        }
-
-        public static float Min(float value1, float value2)
-        {
-            return Math.Min(value1, value2);
         }
 
         public static float SmoothStep(float value1, float value2, float amount)
@@ -106,22 +125,6 @@ namespace Server.Utility
             result = MathHelper.Hermite(value1, 0f, value2, 0f, result);
 
             return result;
-        }
-
-        public static float ToDegrees(float radians)
-        {
-            // This method uses double precission internally,
-            // though it returns single float
-            // Factor = 180 / pi
-            return (float)(radians * 57.295779513082320876798154814105);
-        }
-
-        public static float ToRadians(float degrees)
-        {
-            // This method uses double precission internally,
-            // though it returns single float
-            // Factor = pi / 180
-            return (float)(degrees * 0.017453292519943295769236907684886);
         }
 
         public static float WrapAngle(float angle)
@@ -141,6 +144,7 @@ namespace Server.Utility
             return angle;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsPowerOfTwo(int value)
         {
             return (value > 0) && ((value & (value - 1)) == 0);

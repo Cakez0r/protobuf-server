@@ -17,7 +17,6 @@ namespace Server.Utility
 
     public struct BoundingBox : IEquatable<BoundingBox>
     {
-
         #region Public Fields
 
         public Vector2 Min;
@@ -72,6 +71,22 @@ namespace Server.Utility
             ContainmentType result;
             this.Contains(ref point, out result);
             return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Encapsulate(Vector2 point)
+        {
+            this.Min.X = Math.Min(point.X, this.Min.X);
+            this.Min.Y = Math.Min(point.Y, this.Min.Y);
+            this.Max.X = Math.Max(point.X, this.Max.X);
+            this.Max.Y = Math.Max(point.Y, this.Max.Y);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Encapsulate(BoundingBox bounds)
+        {
+            Encapsulate(bounds.Min);
+            Encapsulate(bounds.Max);
         }
 
         public void Contains(ref Vector2 point, out ContainmentType result)

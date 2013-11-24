@@ -25,7 +25,7 @@ namespace Server.Zones
         private Fiber m_fiber = new Fiber();
 
         private ConcurrentDictionary<int, PlayerPeer> m_playersInZone = new ConcurrentDictionary<int, PlayerPeer>();
-        private KDTree<IEntity> m_playerTree = new KDTree<IEntity>();
+        private PointKDTree<IEntity> m_playerTree = new PointKDTree<IEntity>();
         private PlayerPeer[] m_playerArray;
         private bool m_playerListIsDirty;
 
@@ -35,7 +35,7 @@ namespace Server.Zones
         private List<NPCSpawnModel> m_npcSpawns;
 
         private Dictionary<int, NPCInstance> m_npcs = new Dictionary<int, NPCInstance>();
-        private KDTree<IEntity> m_npcTree = new KDTree<IEntity>();
+        private PointKDTree<IEntity> m_npcTree = new PointKDTree<IEntity>();
         private NPCInstance[] m_npcArray;
 
         private DateTime m_lastUpdateTime = DateTime.Now;

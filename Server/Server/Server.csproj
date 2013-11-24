@@ -48,12 +48,16 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Unity.3.0.1304.0\lib\Net45\Microsoft.Practices.Unity.Configuration.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\packages\Newtonsoft.Json.5.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="NLog">
       <HintPath>..\packages\NLog.2.0.0.2000\lib\net40\NLog.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Threading.Tasks.Dataflow, Version=4.5.8.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -68,9 +72,15 @@
   <ItemGroup>
     <Compile Include="Abilities\AbilityInstance.cs" />
     <Compile Include="Abilities\AbilityState.cs" />
+    <Compile Include="Map\MapData.cs" />
+    <Compile Include="Map\WaypointConnection.cs" />
+    <Compile Include="Map\Waypoint.cs" />
+    <Compile Include="Utility\PolygonKDTree.cs" />
     <Compile Include="Utility\BoundingBox.cs" />
     <Compile Include="Utility\IPositionable.cs" />
-    <Compile Include="Utility\KDTree.cs" />
+    <Compile Include="Utility\PointKDTree.cs" />
+    <Compile Include="Utility\LineSegment.cs" />
+    <Compile Include="Utility\Polygon.cs" />
     <Compile Include="Zones\IEntity.cs" />
     <Compile Include="Abilities\UseAbilityResult.cs" />
     <Compile Include="Gameplay\Formulas.cs" />
@@ -97,7 +107,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Notes.txt" />
-    <None Include="App.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
     <Content Include="NLog.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <SubType>Designer</SubType>
@@ -121,7 +133,9 @@
       <Name>Protocol</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Pathfinding\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
