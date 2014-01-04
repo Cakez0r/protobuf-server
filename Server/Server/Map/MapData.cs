@@ -2,14 +2,12 @@
 using NLog;
 using Server.Utility;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
 
 namespace Server.Map
 {
@@ -17,10 +15,14 @@ namespace Server.Map
     {
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
-        private const float MAX_PATH_LENGTH = 50000000;
+        private const float MAX_PATH_LENGTH = 50000;
 
         public Polygon[] CollisionAreas { get; set; }
         public Waypoint[] Waypoints { get; set; }
+
+        private Pool<Dictionary<int, NodeInfo>> m_infoPool = new Pool<Dictionary<int, NodeInfo>>();
+        private Pool<BinaryHeap<AStarNode>> m_heapPool = new Pool<BinaryHeap<AStarNode>>();
+        private ConcurrentDictionary<long, List<int>> m_pathCache = new ConcurrentDictionary<long, List<int>>();
 
         public static MapData LoadFromFile(string path)
         {
@@ -139,7 +141,7 @@ namespace Server.Map
                 }
 
                 Pen pathPen = new Pen(Color.Blue, 3);
-                List<int> path = CalculateDirection(Waypoints[0], Waypoints[256]);
+                List<int> path = CalculatePath(Waypoints[0], Waypoints[256]);
                 for (int i = 0; i < path.Count - 1; i++)
                 {
                     Point p1 = NormaliseVector(Waypoints[path[i]].Position, bounds.Min, scale, size);
@@ -220,16 +222,30 @@ namespace Server.Map
             public float G;
         }
 
-        public List<int> CalculateDirection(Waypoint from, Waypoint to)
+
+        public List<int> CalculatePath(Waypoint from, Waypoint to)
         {
+            List<int> path;
+
+            long pathKey = ((long)from.Index << 32) | (uint)to.Index;
+            if (m_pathCache.TryGetValue(pathKey, out path))
+            {
+                return path;
+            }
+
+            path = new List<int>();
+
             HashSet<int> closed = new HashSet<int>();
-            BinaryHeap<AStarNode> open = new BinaryHeap<AStarNode>(500);
-            Dictionary<int, NodeInfo> nodeInfo = new Dictionary<int, NodeInfo>();
+            BinaryHeap<AStarNode> open = m_heapPool.Take();
+            Dictionary<int, NodeInfo> nodeInfo = m_infoPool.Take();
+
+            int fromIndex = from.Index;
+            int toIndex = to.Index;
 
             AStarNode startNode = new AStarNode();
-            startNode.Index = from.Index;
-            startNode.H = Vector2.DistanceSquared(from.Position, to.Position);
-            nodeInfo[from.Index] = new NodeInfo() { G = 0, ParentIndex = -1};
+            startNode.Index = fromIndex;
+            startNode.H = Vector2.Distance(from.Position, to.Position);
+            nodeInfo[fromIndex] = new NodeInfo() { G = 0, ParentIndex = -1 };
             startNode.F = startNode.H;
 
             open.Enqueue(startNode);
@@ -237,67 +253,56 @@ namespace Server.Map
             while (open.Count > 0)
             {
                 AStarNode currentNode = open.Dequeue();
-                if (currentNode.Index == to.Index)
+                if (currentNode.Index == toIndex)
                 {
-                    List<int> path = new List<int>();
-                    ReconstructPath(path, nodeInfo, to.Index);
-                    path.Add(from.Index);
-                    return path;
+                    ReconstructPath(path, nodeInfo, toIndex);
+                    path.Add(fromIndex);
+
+                    break;
                 }
 
-                closed.Add(currentNode.Index);
+                int currentIndex = currentNode.Index;
+                Waypoint currentWaypoint = Waypoints[currentIndex];
 
-                Waypoint currentWaypoint = Waypoints[currentNode.Index];
+                closed.Add(currentIndex);
 
                 int neighbourCount = currentWaypoint.Neighbours.Count;
                 for (int i = 0; i < neighbourCount; i++)
                 {
                     Waypoint neighbour = currentWaypoint.Neighbours[i];
+                    int neighbourIndex = neighbour.Index;
 
-                    if (closed.Contains(neighbour.Index))
+                    if (closed.Contains(neighbourIndex))
                     {
                         continue;
                     }
 
-                    float thisG = nodeInfo[currentWaypoint.Index].G + Vector2.DistanceSquared(currentWaypoint.Position, neighbour.Position);
+                    float thisG = nodeInfo[currentIndex].G + Vector2.Distance(currentWaypoint.Position, neighbour.Position);
 
-                    int openListIndex = -1;
-                    int openCount = open.Count;
-                    AStarNode[] openItems = open.Items;
-                    for (int j = 1; j <= openCount; j++)
+                    AStarNode newNode = new AStarNode();
+                    newNode.Index = neighbourIndex;
+
+                    if ((nodeInfo.ContainsKey(neighbourIndex) && thisG < nodeInfo[neighbourIndex].G) || !open.Contains(newNode))
                     {
-                        if (openItems[j].Index == neighbour.Index)
-                        {
-                            openListIndex = j;
-                            break;
-                        }
-                    }
+                        newNode.G = thisG;
+                        newNode.H = Vector2.Distance(neighbour.Position, to.Position);
+                        newNode.F = newNode.G + newNode.H;
+                        open.Enqueue(newNode);
 
-                    bool needsAdding = openListIndex < 0;
-                    if (needsAdding || (nodeInfo.ContainsKey(neighbour.Index) && thisG < nodeInfo[neighbour.Index].G))
-                    {
-                        nodeInfo[neighbour.Index] = new NodeInfo() { ParentIndex = currentNode.Index, G = thisG };
-
-                        if (needsAdding)
-                        {
-                            AStarNode newNode = new AStarNode();
-                            newNode.Index = neighbour.Index;
-                            newNode.G = thisG;
-                            newNode.H = Vector2.DistanceSquared(neighbour.Position, to.Position);
-                            newNode.F = newNode.G + newNode.H;
-                            open.Enqueue(newNode);
-                        }
-                        else
-                        {
-                            open.Items[openListIndex].G = thisG;
-                            open.Items[openListIndex].F = thisG + open.Items[openListIndex].H;
-                            open.Touch(openListIndex);
-                        }
+                        nodeInfo[neighbourIndex] = new NodeInfo() { ParentIndex = currentIndex, G = thisG };
                     }
                 }
             }
 
-            return new List<int>();
+            nodeInfo.Clear();
+            open.Clear();
+
+            m_infoPool.Return(nodeInfo);
+            m_heapPool.Return(open);
+
+            m_pathCache[pathKey] = path;
+
+            return path;
         }
 
         private static void ReconstructPath(List<int> path, Dictionary<int, NodeInfo> visits, int current)

@@ -68,6 +68,7 @@
   <ItemGroup>
     <Compile Include="Abilities\AbilityInstance.cs" />
     <Compile Include="Abilities\AbilityState.cs" />
+    <Compile Include="Bitfield.cs" />
     <Compile Include="Map\AStarNode.cs" />
     <Compile Include="Map\MapData.cs" />
     <Compile Include="Map\WaypointConnection.cs" />

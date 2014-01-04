@@ -7,21 +7,10 @@ using Microsoft.Practices.Unity;
 using Microsoft.Practices.Unity.Configuration;
 using NLog;
 using Protocol;
-using Server.Map;
-using Server.Utility;
-using Server.Zones;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Configuration;
-using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Server
 {
@@ -31,23 +20,6 @@ namespace Server
 
         private static void Main(string[] args)
         {
-            //for (int i = 0; i < 25; i++)
-            {
-                MapData map = MapData.LoadFromFile("bugged.map");
-                Bitmap bmp = map.RenderMap(1024);
-                bmp.Save("path.png");
-
-                Random r = new Random(123432432);
-                int[] rand = Enumerable.Range(0, 10000).Select(i => r.Next(map.Waypoints.Length)).ToArray();
-                Stopwatch sw = Stopwatch.StartNew();
-                Parallel.For(0, rand.Length / 2, (i) =>
-                {
-                    map.CalculateDirection(map.Waypoints[rand[i]], map.Waypoints[rand[i+(rand.Length/2)]]);
-                });
-                sw.Stop();
-                s_log.Info("Pathfinding took {0} ms", sw.ElapsedMilliseconds);
-            }
-
             GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
 
             ServerConfiguration config = (ServerConfiguration)ConfigurationManager.GetSection("server");

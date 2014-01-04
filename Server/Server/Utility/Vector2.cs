@@ -89,6 +89,7 @@ namespace Server.Utility
                 MathHelper.Clamp(value1.Y, min.Y, max.Y));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Distance(Vector2 value1, Vector2 value2)
         {
             float v1 = value1.X - value2.X, v2 = value1.Y - value2.Y;
