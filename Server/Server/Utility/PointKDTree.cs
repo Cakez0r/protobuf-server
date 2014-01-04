@@ -97,8 +97,15 @@ namespace Server.Utility
                     nearestDistance = distance;
                 }
 
-                nearest = NearestNeighbour(node.Before, nearest, nearestDistance, position);
-                nearest = NearestNeighbour(node.After, nearest, nearestDistance, position);
+                if (node.Before >= 0)
+                {
+                    nearest = NearestNeighbour(node.Before, nearest, nearestDistance, position);
+                }
+
+                if (node.After >= 0)
+                {
+                    nearest = NearestNeighbour(node.After, nearest, nearestDistance, position);
+                }
             }
 
             return nearest;

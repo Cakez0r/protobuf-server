@@ -31,18 +31,14 @@ namespace Server.Utility
             // See 10th slides from following link for derivation of the formula
             // http://www.dcs.gla.ac.uk/~pat/52233/slides/Geometry1x1.pdf
 
-            long val = (long)((long)(q.Y - p.Y) * (long)(r.X - q.X) - (long)(q.X - p.X) * (long)(r.Y - q.Y));
+            int sign = Math.Sign((q.Y - p.Y) * (r.X - q.X) - (q.X - p.X) * (r.Y - q.Y));
 
-            if (val == 0)
+            switch (sign)
             {
-                return Orientation.Colinear;
+                case -1: return Orientation.CounterClockwise;
+                case 1: return Orientation.Clockwise;
+                default: return Orientation.Colinear;
             }
-            else if (val > 0)
-            {
-                return Orientation.Clockwise;
-            }
-
-            return Orientation.CounterClockwise;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

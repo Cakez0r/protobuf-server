@@ -20,6 +20,12 @@ namespace Server.Utility
             }
         }
 
+        public LineSegment[] Edges
+        {
+            get;
+            private set;
+        }
+
         public BoundingBox Bounds { get; private set; }
 
         public Vector2 Center { get; private set; }
@@ -69,14 +75,15 @@ namespace Server.Utility
             return c;
         }
 
-        private void UpdateBounds()
+        public void UpdateBounds()
         {
             BoundingBox bounds = new BoundingBox(new Vector2(float.MaxValue, float.MaxValue), new Vector2(float.MinValue, float.MinValue));
-            foreach (Vector2 p in Points)
+            Edges = new LineSegment[Points.Length];
+            for (int i = 0, j = Points.Length - 1; i < Points.Length; j = i++)
             {
-                bounds.Encapsulate(p);
+                Bounds = bounds;
+                Edges[i] = new LineSegment(Points[j], Points[i]);
             }
-            Bounds = bounds;
             Center = (bounds.Min + bounds.Max) * 0.5f;
         }
     }
