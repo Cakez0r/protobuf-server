@@ -9,16 +9,22 @@ namespace Server.Map
 {
     public class WaypointConnection
     {
-        public Waypoint From { get; private set; }
-        public Waypoint To { get; private set; }
-        public float Cost { get; private set; }
+        public Waypoint Source { get; private set; }
+        public Waypoint Target { get; private set; }
+
+        public double Cost { get; private set; }
 
         public WaypointConnection(Waypoint from, Waypoint to)
         {
-            From = from;
-            To = to;
+            Source = from;
+            Target = to;
 
-            Cost = Vector2.DistanceSquared(from.Position, to.Position);
+            Cost = Vector2.DistanceSquared(Source.Position / 1000, Target.Position / 1000);
+        }
+
+        public bool Equals(WaypointConnection other)
+        {
+            return other == this;
         }
     }
 }

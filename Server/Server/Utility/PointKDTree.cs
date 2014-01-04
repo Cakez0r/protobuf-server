@@ -73,6 +73,37 @@ namespace Server.Utility
             }
         }
 
+        public T NearestNeighbour(Vector2 position)
+        {
+            int nearestIndex = 0;
+
+            m_lock.EnterReadLock();
+            nearestIndex = NearestNeighbour(m_root, m_root, float.MaxValue, position);
+            m_lock.ExitReadLock();
+
+            return m_entities[nearestIndex];
+        }
+
+        private int NearestNeighbour(int root, int nearest, float nearestDistance, Vector2 position)
+        {
+            Node node = m_nodes[root];
+
+            if (node.Bounds.Contains(position) != ContainmentType.Disjoint)
+            {
+                float distance = Vector2.DistanceSquared(m_entities[root].Position, position);
+                if (distance < nearestDistance)
+                {
+                    nearest = root;
+                    nearestDistance = distance;
+                }
+
+                nearest = NearestNeighbour(node.Before, nearest, nearestDistance, position);
+                nearest = NearestNeighbour(node.After, nearest, nearestDistance, position);
+            }
+
+            return nearest;
+        }
+
         /// <summary>
         /// Gather all objects that are contained within the given range.
         /// </summary>

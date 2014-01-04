@@ -31,7 +31,7 @@ namespace Server.Utility
             // See 10th slides from following link for derivation of the formula
             // http://www.dcs.gla.ac.uk/~pat/52233/slides/Geometry1x1.pdf
 
-            int val = (int)((q.Y - p.Y) * (r.X - q.X) - (q.X - p.X) * (r.Y - q.Y));
+            long val = (long)((long)(q.Y - p.Y) * (long)(r.X - q.X) - (long)(q.X - p.X) * (long)(r.Y - q.Y));
 
             if (val == 0)
             {

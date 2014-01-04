@@ -9,6 +9,8 @@ namespace Server.Map
 {
     public class Waypoint : IPositionable
     {
+        public int Index { get; private set; }
+
         public Vector2 Position { get; set; }
 
         public IEnumerable<WaypointConnection> Connections
@@ -17,6 +19,18 @@ namespace Server.Map
         }
 
         private Dictionary<Waypoint, WaypointConnection> m_connections = new Dictionary<Waypoint, WaypointConnection>();
+
+        public List<Waypoint> Neighbours
+        {
+            get;
+            private set;
+        }
+
+        public Waypoint(int index)
+        {
+            Index = index;
+            Neighbours = new List<Waypoint>();
+        }
 
         public WaypointConnection GetConnectionTo(Waypoint waypoint)
         {
@@ -34,16 +48,22 @@ namespace Server.Map
 
         public void AddConnectionTo(Waypoint waypoint)
         {
-            WaypointConnection connection = new WaypointConnection(this, waypoint);
-
             lock (m_connections)
             {
-                m_connections[waypoint] = connection;
+                if (!m_connections.ContainsKey(waypoint))
+                {
+                    m_connections.Add(waypoint, new WaypointConnection(this, waypoint));
+                    Neighbours.Add(waypoint);
+                }
             }
 
             lock (waypoint.m_connections)
             {
-                waypoint.m_connections[this] = connection;
+                if (!waypoint.m_connections.ContainsKey(this))
+                {
+                    waypoint.m_connections.Add(this, new WaypointConnection(waypoint, this));
+                    waypoint.Neighbours.Add(this);
+                }
             }
         }
     }
