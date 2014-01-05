@@ -50,8 +50,8 @@ namespace Data.Players
                 X = m_rand.Next(0, 6000),
                 Y = m_rand.Next(0, 6000)
             };
-            player.X = 2500;
-            player.Y = 2500;
+            player.X = 140;
+            player.Y = 140;
 
             return player;
         }

@@ -1,6 +1,7 @@
 ﻿using Server.Utility;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Server.NPC.Behaviours
 {
@@ -14,6 +15,11 @@ namespace Server.NPC.Behaviours
 
         private Random m_rng;
 
+        private List<Vector2> m_currentPath = new List<Vector2>();
+        private int m_currentWaypoint;
+        private Vector2 m_pathTarget;
+
+
         public void Initialise(IReadOnlyDictionary<string, string> vars)
         {
             m_rng = new Random(GetHashCode());
@@ -23,12 +29,39 @@ namespace Server.NPC.Behaviours
 
         public void Update(TimeSpan dt, NPCInstance npc)
         {
-            if (m_target == null || Vector2.DistanceSquared(m_target.Value, npc.Position) < 4)
+            if (m_target == null || Vector2.Distance(m_target.Value, npc.Position) < 4)
             {
                 m_target = GetRandomTarget(new Vector2((float)npc.NPCSpawnModel.X, (float)npc.NPCSpawnModel.Y), m_radius);
+                m_currentPath = null;
             }
 
-            Vector2 velocity = m_target.Value - npc.Position;
+            if (m_target.Value != m_pathTarget)
+            {
+                while (m_currentPath == null || m_currentPath.Count == 0)
+                {
+                    m_target = GetRandomTarget(new Vector2((float)npc.NPCSpawnModel.X, (float)npc.NPCSpawnModel.Y), m_radius);
+                    m_currentPath = Program.Map.CalculatePath(npc.Position, m_target.Value);
+                }
+                m_currentWaypoint = 0;
+
+                m_pathTarget = m_target.Value;
+            }
+
+            while (Vector2.Distance(npc.Position, m_currentPath[m_currentWaypoint]) < 1)
+            {
+                m_currentWaypoint++;
+
+                if (m_currentWaypoint >= m_currentPath.Count)
+                {
+                    return;
+                }
+            }
+
+            Vector2 velocity = m_currentPath[m_currentWaypoint] - npc.Position;
+            if (velocity == Vector2.Zero)
+            {
+                return;
+            }
             velocity.Normalize();
             velocity *= m_walkSpeed;
 
@@ -39,9 +72,15 @@ namespace Server.NPC.Behaviours
 
         private Vector2 GetRandomTarget(Vector2 origin, float radius)
         {
-            double theta = m_rng.NextDouble() * Math.PI * 2;
-            double r = m_rng.NextDouble() * radius;
-            return origin + new Vector2((float)(Math.Sin(theta) * r), (float)(Math.Cos(theta) * r));
+            Vector2 position = Vector2.Zero;
+            do
+            {
+                double theta = m_rng.NextDouble() * Math.PI * 2;
+                double r = m_rng.NextDouble() * radius;
+                position = origin + new Vector2((float)(Math.Sin(theta) * r), (float)(Math.Cos(theta) * r));
+            } while (Program.Map.CollisionAreas.Any(c => c.ContainsPoint(position)));
+
+            return position;
         }
     }
 }

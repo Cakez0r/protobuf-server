@@ -28,6 +28,7 @@ namespace Server.Map
 
         private Pool<Dictionary<int, NodeInfo>> m_infoPool = new Pool<Dictionary<int, NodeInfo>>();
         private Pool<BinaryHeap<AStarNode>> m_heapPool = new Pool<BinaryHeap<AStarNode>>();
+        private Pool<AStarNode> m_nodePool = new Pool<AStarNode>();
         private ConcurrentDictionary<long, List<int>> m_pathCache = new ConcurrentDictionary<long, List<int>>();
 
         private struct NodeInfo
@@ -52,7 +53,7 @@ namespace Server.Map
                 }
             }
 
-            map.CalculateWaypoints();
+            map.CalculateVisibilityGraph();
 
             Waypoint[] waypointsCopy = new Waypoint[map.Waypoints.Length];
             Array.Copy(map.Waypoints, waypointsCopy, waypointsCopy.Length);
@@ -61,7 +62,7 @@ namespace Server.Map
             return map;
         }
 
-        private void CalculateWaypoints()
+        private void CalculateVisibilityGraph()
         {
             DateTime startTime = DateTime.Now;
 
@@ -151,21 +152,24 @@ namespace Server.Map
                 }
 
                 Pen pathPen = new Pen(Color.Blue, 3);
-                Vector2 from = Waypoints[0].Position + new Vector2(38000, 25000);
-                Waypoint fwp = m_waypointTree.NearestNeighbour(from);
-                List<int> path = CalculatePath(fwp, Waypoints[6]);
-                Vector2 direction = GetDirection(from, Waypoints[6].Position) * 50000;
+                Vector2 from = new Vector2(120, 92);
+                Vector2 to = new Vector2(70, 88);
+                List<Vector2> path = CalculatePath(from, to);
+
+                Point a1 = NormaliseVector(from * 1000, bounds.Min, scale, size);
+                Point a2 = NormaliseVector(path[0] * 1000, bounds.Min, scale, size);
+                PointF c = new PointF(a1.X, a1.Y);
+                g.DrawLine(pathPen, a1, a2);
+                g.DrawString("From", font, b, c);
+
                 for (int i = 0; i < path.Count - 1; i++)
                 {
-                    Point p1 = NormaliseVector(Waypoints[path[i]].Position, bounds.Min, scale, size);
-                    Point p2 = NormaliseVector(Waypoints[path[i + 1]].Position, bounds.Min, scale, size);
+                    Point p1 = NormaliseVector(path[i] * 1000, bounds.Min, scale, size);
+                    Point p2 = NormaliseVector(path[i + 1] * 1000, bounds.Min, scale, size);
                     PointF f = new PointF(p1.X, p1.Y);
                     g.DrawLine(pathPen, p1, p2);
+                    g.DrawString(i.ToString(), font, b, f);
                 }
-
-                Pen directionPen = new Pen(Color.Tomato, 5);
-                g.DrawLine(directionPen, NormaliseVector(from, bounds.Min, scale, size), NormaliseVector(from + direction, bounds.Min, scale, size));
-                g.DrawString("From", font, b, new PointF(NormaliseVector(from, bounds.Min, scale, size).X, NormaliseVector(from, bounds.Min, scale, size).Y));
             }
             return render;
         }
@@ -226,41 +230,53 @@ namespace Server.Map
             return false;
         }
 
-        public Vector2 GetDirection(Vector2 from, Vector2 to)
+        public List<Vector2> CalculatePath(Vector2 from, Vector2 to)
         {
-            //No need for a path
+            from *= SCALE_FACTOR;
+            to *= SCALE_FACTOR;
+
+            List<Vector2> path = null;
+
             if (HasClearLineOfSight(from, to))
             {
-                return Vector2.Normalize(to - from);
+                path = new List<Vector2>(1);
+                //No need for a path
+                path.Add(to / 1000);
             }
-
-            //Find a path
-            Waypoint nearestFrom = m_waypointTree.NearestNeighbour(from);
-            Waypoint nearestTo = m_waypointTree.NearestNeighbour(to);
-
-            List<int> path = CalculatePath(nearestFrom, nearestTo);
-
-            //Find the furthest node along the path with a clear LoS
-            for (int i = path.Count - 1; i >= 0; i--)
+            else
             {
-                Vector2 waypointPosition = Waypoints[path[i]].Position;
-                if (from == waypointPosition)
+                //Find a path
+                Waypoint nearestFrom = m_waypointTree.NearestNeighbour(from);
+                Waypoint nearestTo = m_waypointTree.NearestNeighbour(to);
+
+                List<int> waypointIndices = CalculateWaypoints(nearestFrom, nearestTo);
+                path = new List<Vector2>(waypointIndices.Count);
+
+                int startFrom = 0;
+                for (int i = waypointIndices.Count - 1; i > 0; --i)
                 {
-                    return from += Vector2.One;
+                    if (HasClearLineOfSight(from, Waypoints[waypointIndices[i]].Position))
+                    {
+                        startFrom = i;
+                        break;
+                    }
                 }
 
-                if (HasClearLineOfSight(from, waypointPosition))
+                for (int i = startFrom; i < waypointIndices.Count; i++)
                 {
-                    return Vector2.Normalize(waypointPosition - from);
+                    path.Add(Waypoints[waypointIndices[i]].Position / SCALE_FACTOR);
+                }
+
+                if (path.Count > 0)
+                {
+                    path.Add(to / SCALE_FACTOR);
                 }
             }
 
-
-            //No path found
-            return Vector2.Zero;
+            return path;
         }
 
-        public List<int> CalculatePath(Waypoint from, Waypoint to)
+        private List<int> CalculateWaypoints(Waypoint from, Waypoint to)
         {
             //Switch the to and from order to avoid having to reverse the reconstructed path
             Waypoint tmp = from;
@@ -289,7 +305,7 @@ namespace Server.Map
             int toIndex = to.Index;
 
             //Push the starting node
-            AStarNode startNode = new AStarNode();
+            AStarNode startNode = m_nodePool.Take();
             startNode.Index = fromIndex;
             startNode.H = Vector2.Distance(from.Position, to.Position);
             nodeInfo[fromIndex] = new NodeInfo() { G = 0, ParentIndex = -1 };
@@ -301,14 +317,17 @@ namespace Server.Map
             {
                 //Take node with lowest F score
                 AStarNode currentNode = open.Dequeue();
+                int currentIndex = currentNode.Index;
+                m_nodePool.Return(currentNode);
+
                 if (currentNode.Index == toIndex)
                 {
+
                     ReconstructPath(path, nodeInfo, toIndex);
                     break;
                 }
 
                 //Get waypoint for the node we're looking at
-                int currentIndex = currentNode.Index;
                 Waypoint currentWaypoint = Waypoints[currentIndex];
 
                 //Mark node visited
@@ -332,7 +351,7 @@ namespace Server.Map
                     float thisG = nodeInfo[currentIndex].G + Vector2.Distance(currentWaypoint.Position, neighbour.Position);
 
                     //Speculatively create the new node to consider
-                    AStarNode newNode = new AStarNode();
+                    AStarNode newNode = m_nodePool.Take();
                     newNode.Index = neighbourIndex;
 
                     //If we're not considering this node OR
@@ -352,11 +371,17 @@ namespace Server.Map
                 }
             }
 
+            //Free nodes
+            for (int i = 1; i < open.Count; i++)
+            {
+                m_nodePool.Return(open.Items[i]);
+            }
+
             //Reset data structures
             nodeInfo.Clear();
             open.Clear();
 
-            //Return to pools
+            //Free data structures
             m_infoPool.Return(nodeInfo);
             m_heapPool.Return(open);
 

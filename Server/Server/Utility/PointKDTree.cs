@@ -76,39 +76,57 @@ namespace Server.Utility
         public T NearestNeighbour(Vector2 position)
         {
             int nearestIndex = 0;
+            float nearestDistance = float.MaxValue;
 
             m_lock.EnterReadLock();
-            nearestIndex = NearestNeighbour(m_root, m_root, float.MaxValue, position);
+            NearestNeighbour(m_root, position, false, ref nearestIndex, ref nearestDistance);
             m_lock.ExitReadLock();
 
             return m_entities[nearestIndex];
         }
 
-        private int NearestNeighbour(int root, int nearest, float nearestDistance, Vector2 position)
+        private void NearestNeighbour(int root, Vector2 position, bool splitByX, ref int nearestIndex, ref float nearestDistance)
         {
+            // Reference http://noldorin.com/programming/KdTree.cs : FindNearestNNeighbors
+
+            float rootValue = splitByX ? m_entities[root].Position.X : m_entities[root].Position.Y;
+            float searchValue = splitByX ? position.X : position.Y;
+
             Node node = m_nodes[root];
 
-            if (node.Bounds.Contains(position) != ContainmentType.Disjoint)
-            {
-                float distance = Vector2.DistanceSquared(m_entities[root].Position, position);
-                if (distance < nearestDistance)
-                {
-                    nearest = root;
-                    nearestDistance = distance;
-                }
+            float distance = Vector2.DistanceSquared(position, m_entities[root].Position);
 
+            if (distance < nearestDistance)
+            {
+                nearestDistance = distance;
+                nearestIndex = root;
+            }
+
+            if (searchValue < rootValue)
+            {
                 if (node.Before >= 0)
                 {
-                    nearest = NearestNeighbour(node.Before, nearest, nearestDistance, position);
+                    NearestNeighbour(node.Before, position, !splitByX, ref nearestIndex, ref nearestDistance);
                 }
-
+            }
+            else
+            {
                 if (node.After >= 0)
                 {
-                    nearest = NearestNeighbour(node.After, nearest, nearestDistance, position);
+                    NearestNeighbour(node.After, position, !splitByX, ref nearestIndex, ref nearestDistance);
                 }
             }
 
-            return nearest;
+            if (Math.Abs(rootValue - searchValue) < nearestDistance)
+            {
+                if (searchValue < rootValue)
+                {
+                    if (node.After >= 0)
+                    {
+                        NearestNeighbour(node.After, position, !splitByX, ref nearestIndex, ref nearestDistance);
+                    }
+                }
+            }
         }
 
         /// <summary>

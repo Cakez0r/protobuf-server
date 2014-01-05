@@ -20,7 +20,7 @@ namespace Server
     public sealed class World : IDisposable
     {
         private const int TARGET_UPDATE_TIME_MS = 50;
-        private const int STATS_UPDATE_INTERVAL_MS = 1000;
+        private const int STATS_UPDATE_INTERVAL_MS = 15000;
 
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
@@ -64,7 +64,7 @@ namespace Server
             m_cpuCounter.InstanceName = "_Total";
 
             m_fiber.Enqueue(Update, false);
-            m_fiber.Enqueue(StatsUpdate, false);
+            //m_fiber.Enqueue(StatsUpdate, false);
         }
 
         public void AcceptSocket(Socket sock)
@@ -82,18 +82,21 @@ namespace Server
         private void Update()
         {
             Stopwatch updateTimer = Stopwatch.StartNew();
-            Parallel.ForEach(m_players, kvp =>
+            if (m_players.Count > 0)
             {
-                PlayerPeer player = kvp.Value;
-                if (!player.IsConnected)
+                Parallel.ForEach(m_players, kvp =>
                 {
-                    s_log.Info("[{0}] is disconnected and will be removed", player.ID);
-                    PlayerPeer.LoggedInAccounts[player.AccountID] = false;
-                    player.Dispose();
-                    PlayerPeer removedPlayer = default(PlayerPeer);
-                    m_players.TryRemove(kvp.Key, out removedPlayer);
-                }
-            });
+                    PlayerPeer player = kvp.Value;
+                    if (!player.IsConnected)
+                    {
+                        s_log.Info("[{0}] is disconnected and will be removed", player.ID);
+                        PlayerPeer.LoggedInAccounts[player.AccountID] = false;
+                        player.Dispose();
+                        PlayerPeer removedPlayer = default(PlayerPeer);
+                        m_players.TryRemove(kvp.Key, out removedPlayer);
+                    }
+                });
+            }
             updateTimer.Stop();
 
             m_lastWorldUpdateLength = (int)updateTimer.ElapsedMilliseconds;
@@ -150,7 +153,7 @@ namespace Server
             Dictionary<int, Zone> zones = new Dictionary<int, Zone>();
             for (int i = 0; i < 1; i++)
             {
-                zones.Add(i, new Zone(i, m_npcRepository, m_npcFactory));
+                zones.Add(i, new Zone(i, m_npcRepository, m_npcFactory, Program.Map));
             }
             return zones;
         }

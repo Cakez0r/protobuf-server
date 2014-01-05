@@ -2,6 +2,7 @@
 using NLog;
 using Protocol;
 using Server.Abilities;
+using Server.Map;
 using Server.NPC;
 using Server.Utility;
 using System;
@@ -18,7 +19,7 @@ namespace Server.Zones
     public class Zone
     {
         private const int TARGET_UPDATE_TIME_MS = 50;
-        private const float RELEVANCE_DISTANCE_SQR = 40 * 40;
+        private const float RELEVANCE_DISTANCE_SQR = 4000 * 4000;
 
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
@@ -28,6 +29,8 @@ namespace Server.Zones
         private PointKDTree<IEntity> m_playerTree = new PointKDTree<IEntity>();
         private PlayerPeer[] m_playerArray;
         private bool m_playerListIsDirty;
+
+        private MapData m_mapData;
 
         private INPCRepository m_npcRepository;
         private NPCFactory m_npcFactory;
@@ -45,12 +48,14 @@ namespace Server.Zones
 
         public int ID { get; private set; }
 
-        public Zone(int zoneID, INPCRepository npcRepository, NPCFactory npcFactory)
+        public Zone(int zoneID, INPCRepository npcRepository, NPCFactory npcFactory, MapData mapData)
         {
             ID = zoneID;
 
             m_npcRepository = npcRepository;
             m_npcFactory = npcFactory;
+
+            m_mapData = mapData;
 
             m_npcSpawns = LoadZoneNPCSpawns();
             m_npcArray = new NPCInstance[m_npcSpawns.Count];
