@@ -4,10 +4,12 @@ using NLog;
 using Protocol;
 using Server.Abilities;
 using Server.Gameplay;
+using Server.Map;
 using Server.Utility;
 using Server.Zones;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Server.NPC
@@ -22,6 +24,7 @@ namespace Server.NPC
         public NPCSpawnModel NPCSpawnModel { get; private set; }
 
         private List<INPCBehaviour> m_behaviours;
+        private Dictionary<Type, INPCBehaviour> m_behavioursByType;
 
         private IReadOnlyDictionary<StatType, float> m_stats;
 
@@ -29,6 +32,8 @@ namespace Server.NPC
 
         private EntityStateUpdate m_stateUpdate;
         private EntityIntroduction m_introduction;
+
+        private MapData m_mapData;
 
         public Vector2 Position { get; set; }
 
@@ -51,12 +56,15 @@ namespace Server.NPC
 
         public byte Level { get { return 1; } }
 
-        public NPCInstance(Fiber fiber, NPCModel npc, NPCSpawnModel npcSpawn, List<INPCBehaviour> behaviours, IReadOnlyDictionary<StatType, float> stats)
+        public NPCInstance(Fiber fiber, NPCModel npc, NPCSpawnModel npcSpawn, List<INPCBehaviour> behaviours, IReadOnlyDictionary<StatType, float> stats, MapData mapData)
         {
             NPCModel = npc;
             NPCSpawnModel = npcSpawn;
             m_stats = stats;
             m_fiber = fiber;
+            m_mapData = mapData;
+
+            m_behavioursByType = m_behaviours.ToDictionary(b => b.GetType());
 
             Position = new Vector2((float)npcSpawn.X, (float)npcSpawn.Y);
             ID = IDGenerator.GetNextID();
@@ -207,6 +215,20 @@ namespace Server.NPC
         public EntityIntroduction GetIntroduction()
         {
             return m_introduction;
+        }
+
+        protected List<Vector2> FindPath(Vector2 from, Vector2 to)
+        {
+            return m_mapData.FindPath(from, to);
+        }
+
+        public T GetBehaviour<T>() where T : class, INPCBehaviour
+        {
+            INPCBehaviour behaviour = null;
+
+            m_behavioursByType.TryGetValue(typeof(T), out behaviour);
+
+            return behaviour as T;
         }
 
         #region Logging

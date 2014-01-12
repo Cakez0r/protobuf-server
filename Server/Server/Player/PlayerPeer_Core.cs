@@ -1,6 +1,5 @@
 ﻿using Data.Abilities;
 using Data.Accounts;
-using Data.NPCs;
 using Data.Players;
 using NLog;
 using Protocol;

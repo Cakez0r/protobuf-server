@@ -1,51 +1,44 @@
 ﻿using Data.NPCs;
 using NLog;
 using Protocol;
-using Server.Abilities;
 using Server.Map;
 using Server.NPC;
 using Server.Utility;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Server.Zones
 {
     public class Zone
     {
+        private static Logger s_log = LogManager.GetCurrentClassLogger();
+
         private const int TARGET_UPDATE_TIME_MS = 50;
         private const float RELEVANCE_DISTANCE_SQR = 4000 * 4000;
 
-        private static Logger s_log = LogManager.GetCurrentClassLogger();
-
+        private DateTime m_lastUpdateTime = DateTime.Now;
+        private Stopwatch m_zoneUpdateTimer = new Stopwatch();
         private Fiber m_fiber = new Fiber();
+
+        private MapData m_mapData;
 
         private ConcurrentDictionary<int, PlayerPeer> m_playersInZone = new ConcurrentDictionary<int, PlayerPeer>();
         private PointKDTree<IEntity> m_playerTree = new PointKDTree<IEntity>();
         private PlayerPeer[] m_playerArray;
         private bool m_playerListIsDirty;
 
-        private MapData m_mapData;
-
         private INPCRepository m_npcRepository;
         private NPCFactory m_npcFactory;
-
         private List<NPCSpawnModel> m_npcSpawns;
-
         private Dictionary<int, NPCInstance> m_npcs = new Dictionary<int, NPCInstance>();
         private PointKDTree<IEntity> m_npcTree = new PointKDTree<IEntity>();
         private NPCInstance[] m_npcArray;
 
-        private DateTime m_lastUpdateTime = DateTime.Now;
-
-        private Stopwatch m_zoneUpdateTimer = new Stopwatch();
         public long LastUpdateLength { get; private set; }
-
         public int ID { get; private set; }
 
         public Zone(int zoneID, INPCRepository npcRepository, NPCFactory npcFactory, MapData mapData)
@@ -61,7 +54,7 @@ namespace Server.Zones
             m_npcArray = new NPCInstance[m_npcSpawns.Count];
             for (int i = 0; i < m_npcSpawns.Count; i++)
             {
-                NPCInstance npcInstance = npcFactory.SpawnNPC(m_fiber, m_npcSpawns[i]);
+                NPCInstance npcInstance = npcFactory.CreateNPC(m_fiber, m_npcSpawns[i], mapData);
                 m_npcs.Add(npcInstance.ID, npcInstance);
                 m_npcArray[i] = npcInstance;
             }
@@ -148,13 +141,6 @@ namespace Server.Zones
                 s_log.Warn("Zone {0} update ran into overtime by {1}ms", ID, Math.Abs(restTime));
                 m_fiber.Enqueue(Update);
             }
-        }
-
-
-
-        public void AbilityUsed(AbilityInstance ability)
-        {
-
         }
 
         public Task<IEntity> GetTarget(int id)

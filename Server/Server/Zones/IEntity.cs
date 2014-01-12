@@ -1,6 +1,5 @@
 ﻿using Protocol;
 using Server.Utility;
-using System.Threading.Tasks;
 
 namespace Server.Zones
 {

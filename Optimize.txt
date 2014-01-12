@@ -1,0 +1,22 @@
+10452, 10552, 10617
+* Precompute distances
+	10634, 10576, 10591
+* Add LUT to heap
+	10071, 9734, 9837
+	9649, 9475, 9565
+* Change heap size / pooling
+	9295, 9627, 9455
+	8765, 8976, 8896
+* Replace closed set with bitfield
+	Slower?
+* Path cache
+	4502, 4368, 4464
+	
+4506, 4483, 4328
+4356, 4582, 4397
+
+70, 66
+
+125, 105
+
+98, 86

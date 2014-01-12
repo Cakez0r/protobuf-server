@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Server.Utility
 {
@@ -118,7 +115,7 @@ namespace Server.Utility
             m_items[1] = m_items[m_itemCount];
 
             m_index[m_items[1]] = 1;
-            //m_index.Remove(ret);
+            m_index.Remove(ret);
 
             --m_itemCount;
             Downheap(m_items, 1, m_itemCount + 1, m_index);

@@ -4,6 +4,7 @@ using Data.NPCs;
 using Data.Players;
 using Data.Stats;
 using NLog;
+using Server.Map;
 using Server.NPC;
 using Server.Utility;
 using Server.Zones;
@@ -153,7 +154,8 @@ namespace Server
             Dictionary<int, Zone> zones = new Dictionary<int, Zone>();
             for (int i = 0; i < 1; i++)
             {
-                zones.Add(i, new Zone(i, m_npcRepository, m_npcFactory, Program.Map));
+                MapData mapData = MapData.LoadFromFile(i.ToString() + ".map");
+                zones.Add(i, new Zone(i, m_npcRepository, m_npcFactory, mapData));
             }
             return zones;
         }

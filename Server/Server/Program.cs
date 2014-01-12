@@ -7,50 +7,20 @@ using Microsoft.Practices.Unity;
 using Microsoft.Practices.Unity.Configuration;
 using NLog;
 using Protocol;
-using Server.Map;
-using Server.Utility;
-using System;
 using System.Configuration;
-using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime;
-using System.Threading.Tasks;
 
 namespace Server
 {
     class Program
     {
-        public static MapData Map;
-
         private static Logger s_log = LogManager.GetCurrentClassLogger();
 
         private static void Main(string[] args)
         {
             GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
-
-            Map = MapData.LoadFromFile("game2.unity.map");
-            Bitmap bmp = Map.RenderMap(1024);
-            bmp.Save("map.png");
-
-            //{
-            //    MapData map = MapData.LoadFromFile("bugged.map");
-            //    Bitmap bmp = map.RenderMap(1024);
-            //    bmp.Save("path.png");
-
-            //    Random r = new Random(123432432);
-            //    int[] rand = Enumerable.Range(0, 1000000).Select(i => r.Next(map.Waypoints.Length)).ToArray();
-            //    Stopwatch sw = Stopwatch.StartNew();
-            //    //Parallel.For(0, rand.Length - 4, (i) =>
-            //    for (int i = 0; i < rand.Length / 2; i++)
-            //    {
-            //        Vector2 direction = map.GetDirection(new Vector2(rand[i], rand[i + 1]), new Vector2(rand[i + 2], rand[i + 3]));
-            //    }//);
-            //    sw.Stop();
-            //    s_log.Info("Pathfinding took {0} ms", sw.ElapsedMilliseconds);
-            //}
 
             ServerConfiguration config = (ServerConfiguration)ConfigurationManager.GetSection("server");
 

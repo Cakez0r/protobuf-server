@@ -1,15 +1,10 @@
-﻿using Data.NPCs;
-using Protocol;
+﻿using Protocol;
 using Server.Abilities;
 using Server.Gameplay;
-using Server.NPC;
 using Server.Utility;
 using Server.Zones;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Linq;
 
 namespace Server
 {

@@ -1,5 +1,4 @@
 ﻿using Data.Abilities;
-using NLog;
 using Server.Utility;
 using Server.Zones;
 using System;

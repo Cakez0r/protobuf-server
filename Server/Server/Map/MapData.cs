@@ -154,7 +154,7 @@ namespace Server.Map
                 Pen pathPen = new Pen(Color.Blue, 3);
                 Vector2 from = new Vector2(120, 92);
                 Vector2 to = new Vector2(70, 88);
-                List<Vector2> path = CalculatePath(from, to);
+                List<Vector2> path = FindPath(from, to);
 
                 Point a1 = NormaliseVector(from * 1000, bounds.Min, scale, size);
                 Point a2 = NormaliseVector(path[0] * 1000, bounds.Min, scale, size);
@@ -230,7 +230,7 @@ namespace Server.Map
             return false;
         }
 
-        public List<Vector2> CalculatePath(Vector2 from, Vector2 to)
+        public List<Vector2> FindPath(Vector2 from, Vector2 to)
         {
             from *= SCALE_FACTOR;
             to *= SCALE_FACTOR;
