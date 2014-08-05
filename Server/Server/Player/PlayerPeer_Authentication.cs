@@ -19,10 +19,6 @@ namespace Server
         private PlayerModel m_player;
 
         private static ConcurrentDictionary<int, bool> s_loggedInAccounts = new ConcurrentDictionary<int, bool>();
-        public static ConcurrentDictionary<int, bool> LoggedInAccounts 
-        {
-            get { return s_loggedInAccounts; }
-        }
 
         public int AccountID { get; private set; }
 

@@ -1,12 +1,13 @@
 ﻿#if !NO_RUNTIME
-using ProtoBuf.Meta;
 using System;
+
+using ProtoBuf.Meta;
 
 #if FEAT_IKVM
 using Type = IKVM.Reflection.Type;
 using IKVM.Reflection;
 #else
-
+using System.Reflection;
 #endif
 
 namespace ProtoBuf.Serializers

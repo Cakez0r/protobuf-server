@@ -1,8 +1,9 @@
 ﻿#if (FEAT_SERVICEMODEL && PLAT_XMLSERIALIZER) || (SILVERLIGHT && !PHONE7)
-using ProtoBuf.Meta;
-using System;
 using System.IO;
 using System.Runtime.Serialization;
+using System.Xml;
+using ProtoBuf.Meta;
+using System;
 
 namespace ProtoBuf.ServiceModel
 {
@@ -163,9 +164,15 @@ namespace ProtoBuf.ServiceModel
                 {
                     return model.Deserialize(Stream.Null, null, type, null);
                 }
-                using (ProtoReader protoReader = new ProtoReader(Stream.Null, model, null))
+                ProtoReader protoReader = null;
+                try
                 {
+                    protoReader = ProtoReader.Create(Stream.Null, model, null, ProtoReader.TO_EOF);
                     return model.Deserialize(key, null, protoReader);
+                }
+                finally
+                {
+                    ProtoReader.Recycle(protoReader);
                 }
             }
 
@@ -179,9 +186,15 @@ namespace ProtoBuf.ServiceModel
                 }
                 else
                 {
-                    using (ProtoReader protoReader = new ProtoReader(ms, model, null))
+                    ProtoReader protoReader = null;
+                    try
                     {
+                        protoReader = ProtoReader.Create(ms, model, null, ProtoReader.TO_EOF);
                         result = model.Deserialize(key, null, protoReader);
+                    }
+                    finally
+                    {
+                        ProtoReader.Recycle(protoReader);
                     }
                 }
             }

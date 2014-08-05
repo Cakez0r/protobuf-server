@@ -160,6 +160,9 @@ namespace Server
                 base.Dispose(true);
             });
 
+            bool loggedIn = false;
+            s_loggedInAccounts.TryRemove(AccountID, out loggedIn);
+
             m_lastAbility.Dispose();
         }
 

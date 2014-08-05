@@ -1,6 +1,6 @@
 ﻿
 using System;
-
+using System.Collections;
 
 #if FEAT_IKVM
 using Type = IKVM.Reflection.Type;
@@ -185,6 +185,10 @@ namespace ProtoBuf
                 }
             }
             return null;
+        }
+        internal static MethodInfo GetInstanceMethod(Type declaringType, string name, Type[] types)
+        {
+            return GetInstanceMethod(declaringType.GetTypeInfo(), name, types);
         }
         internal static MethodInfo GetInstanceMethod(TypeInfo declaringType, string name, Type[] types)
         {
@@ -560,6 +564,7 @@ namespace ProtoBuf
             return target.IsAssignableFrom(type);
 #endif
         }
+
     }
     /// <summary>
     /// Intended to be a direct map to regular TypeCode, but:

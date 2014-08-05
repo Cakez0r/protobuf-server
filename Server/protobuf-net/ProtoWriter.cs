@@ -1,7 +1,8 @@
-﻿using ProtoBuf.Meta;
-using System;
+﻿using System;
+
 using System.IO;
 using System.Text;
+using ProtoBuf.Meta;
 #if MF
 using OverflowException = System.ApplicationException;
 #endif
